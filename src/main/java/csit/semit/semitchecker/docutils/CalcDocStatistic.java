@@ -9,15 +9,15 @@ import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
 import org.jodconverter.core.office.OfficeException;
 import org.jodconverter.local.LocalConverter;
 import org.jodconverter.local.office.LocalOfficeManager;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTLanguage;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSettings;
 
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -122,7 +122,7 @@ public class CalcDocStatistic {
         // Получаем количество страниц в PDF
         //!!! Но додати треба одинцю, бо чистий файл без титулок починається із сторінки 2
         try (PDDocument document = PDDocument.load(outputFile)) {
-            count = document.getNumberOfPages()+1;
+            count = document.getNumberOfPages() + 1;
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при чтении PDF", e);
         }
@@ -151,7 +151,7 @@ public class CalcDocStatistic {
         String styleName = "Tablenumber";
         List<XWPFParagraph> paragraphs = this.getParagraphesDocDefStyle(styleName);
         if (paragraphs.size() > 0) {
-            for (int i=0; i < paragraphs.size(); i++) {
+            for (int i = 0; i < paragraphs.size(); i++) {
                 if (paragraphs.get(i).getText().toUpperCase().startsWith("КІНЕЦЬ ТАБЛИЦІ") ||
                         paragraphs.get(i).getText().toUpperCase().startsWith("ПРОДОВЖЕННЯ ТАБЛИЦІ")) {
                     count--;
@@ -207,7 +207,6 @@ public class CalcDocStatistic {
         }
 
 
-
         return count;
     }
 
@@ -254,6 +253,35 @@ public class CalcDocStatistic {
             }
         }
         return usedStyles;
+    }
+
+    /**
+     * Спроба автоматичного визначення мови документа Word (.docx)
+     *
+     * @return локаль, або null, якщо не вдалося визначити
+     */
+    public Locale detectLocale() {
+        // Отримуємо settings через API Apache POI
+        CTSettings settings = document.getSettings().getCTSettings();
+
+        if (settings != null && settings.isSetThemeFontLang()) {
+            CTLanguage lang = settings.getThemeFontLang();
+            String langCode = lang.getVal(); // Наприклад, "uk-UA"
+            return parseLanguageCode(langCode);
+        }
+
+        return null;
+    }
+
+    public Locale parseLanguageCode(String langCode) {
+        //getVal() може повернути значення типу uk-UA, en-US, ru-RU, тож враховуй це у parseLanguageCode.
+        if (langCode == null) return null;
+        langCode = langCode.toLowerCase();
+        if (langCode.startsWith("uk")) return new Locale("uk", "UA");
+        if (langCode.startsWith("ru")) return new Locale("ru", "RU");
+        if (langCode.startsWith("en")) return Locale.ENGLISH;
+        // можна додати більше мов
+        return null;
     }
 
 
