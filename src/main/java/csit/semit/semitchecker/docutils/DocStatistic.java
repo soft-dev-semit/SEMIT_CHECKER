@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Locale;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -11,7 +13,9 @@ public class DocStatistic {
     //імя файлу
     private String filename;
     //мова тексту
-    private String docLocale;
+    private Locale docLocale;
+    //мова Ворд
+    private Locale wordLocale;
     //Границі
     private double leftMargin;
     private double rightMargin;
@@ -24,38 +28,57 @@ public class DocStatistic {
     private int countSources;
     private int countAppendixes;
     //Рядок для реферату (заповнюється програмно)
-    private String abstractRow;
+    private String abstractUARow;
+    private String abstractENRow;
 
 
-    public void prepareAbstract() {
+    public void prepareAbstractUA() {
         StringBuilder sb = null;
-        //English options
-        if (docLocale.equals("UA")) {
-            sb = new StringBuilder("Реферат: ");
-            if (countPages != 0) {
-                sb.append(countPages).append(" стор.");
-                if (countFigures != 0) {
-                    sb.append(", ").append(countFigures).append(" рис.");
-                }
-                if (countTables != 0) {
-                    sb.append(", ").append(countTables).append(" табл.");
-                }
-                if (countSources != 0) {
-                    sb.append(", ").append(countSources).append(" джерел");
-                }
-                if (countAppendixes != 0) {
-                    sb.append(", ").append(countAppendixes).append(" додатків");
-                }
-            } else {
-                sb.append("помилки обробки файлу");
+        //Ukrainian options
+        sb = new StringBuilder("Реферат: ");
+        if (countPages > 0) {
+            sb.append(countPages).append(" стор.");
+            if (countFigures > 0) {
+                sb.append(", ").append(countFigures).append(" рис.");
+            }
+            if (countTables > 0) {
+                sb.append(", ").append(countTables).append(" табл.");
+            }
+            if (countSources > 0) {
+                sb.append(", ").append(countSources).append(" джерел");
+            }
+            if (countAppendixes > 0) {
+                sb.append(", ").append(countAppendixes).append(" додатків");
             }
         } else {
-//            docLocale.equals("EN")
-            sb = new StringBuilder("Abstract: ");
-            if (countPages == 0) {
-                sb.append("wrong file processing");
-            }
+            sb.append("помилки обробки файлу");
         }
-        abstractRow = sb.toString();
+        abstractUARow = sb.toString();
     }
+
+    public void prepareAbstractEN() {
+        StringBuilder sb = null;
+        //English options
+        sb = new StringBuilder("Abstract: ");
+        if (countPages > 0) {
+            sb.append(countPages).append(" p.");
+            if (countFigures > 0) {
+                sb.append(", ").append(countFigures).append(" fig.");
+            }
+            if (countTables > 0) {
+                sb.append(", ").append(countTables).append(" tabl.");
+            }
+            if (countSources > 0) {
+                sb.append(", ").append(countSources).append(" soureces");
+            }
+            if (countAppendixes > 0) {
+                sb.append(", ").append(countAppendixes).append(" appendexes");
+            }
+        } else {
+            sb.append("помилки обробки файлу");
+        }
+        abstractENRow = sb.toString();
+    }
+
+
 }

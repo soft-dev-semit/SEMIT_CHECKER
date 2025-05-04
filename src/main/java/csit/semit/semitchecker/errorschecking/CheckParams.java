@@ -1,5 +1,7 @@
 package csit.semit.semitchecker.errorschecking;
 
+import csit.semit.semitchecker.serviceenums.Lang;
+import csit.semit.semitchecker.serviceenums.MultiLang;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,17 +27,18 @@ import java.util.Locale;
 @Setter
 @Getter
 public class CheckParams {
-
-    //Мова відображення інтерфейсу - тільки 2 варіанти, по замовченню UA
-    public Locale localeInterfaces = Lang.UA.getLocale();
-    //Мова документу - тільки 2 варіанти, по замовченню UA
-    public Locale localeDoc;
     //Locale Word - різні варіанти, визначається налаштуваннями ворд при збереженні документу, по замовченню ENGLISH
     public Locale localeWord;
+    //Мова документу - тільки 2 варіанти, по замовченню UA
+    public Locale localeDoc;
+    //Мова відображення інтерфейсу ( - тільки 2 варіанти, по замовченню UA
+    public Locale localeInterface = Lang.UA.getLocale();
 
     public CheckParams() {
-        localeInterfaces = Lang.UA.getLocale();
+        localeWord = MultiLang.UA.getLocale();
         localeDoc = Lang.UA.getLocale();
-        localeWord = MultiLang.EN.getLocale();
+        localeInterface = Lang.UA.getLocale();
     }
+
+    //Конструктор із всіма параметрами задається анотацією @AllArgsConstructor
 }
