@@ -17,8 +17,10 @@ import java.util.Set;
 public class DocStatisticCalcTest {
 
     // Имя ворд-файлу для тестування обробки
-//    String docName = "checker_test_file_kr_ua2.docx";
-    String docName = "checker_test_2.docx";
+    String docName = "checker_test_file_kr_ua2.docx";
+//    String docName = "checker_test_file_kr_ua2-ENWord.docx";
+//    String docName = "Test-file-pereliki.uk.en.docx";
+//    String docName = "Test-file-pereliki.docx";
 
     @Test
     void showDocParagraphs() throws IOException {

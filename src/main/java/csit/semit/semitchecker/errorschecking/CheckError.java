@@ -12,6 +12,13 @@ public class CheckError {
         this.errorCodText = errorCodText;
     }
 
+    public String getErrorPlace() {
+        return errorPlace;
+    }
+
+    public String getErrorCodText() {
+        return errorCodText;
+    }
 
     @Override
     public String toString() {

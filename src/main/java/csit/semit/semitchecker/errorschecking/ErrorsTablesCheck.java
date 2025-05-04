@@ -7,6 +7,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
     //TODO Ксенія - перевірка оформлення таблиць
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
+        System.out.println("CHECKED! ----- "+typeErrors);
         return null;
     }
 }
