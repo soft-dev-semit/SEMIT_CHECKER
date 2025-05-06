@@ -17,12 +17,13 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
     }
 
     public ErrorsList checkTableNames(XWPFDocument document, CheckParams checkParams, String typeErrors) {
-        ResourceBundle bundle = ResourceBundle.getBundle("resoursesboundles/table", checkParams.getLocaleInterfaces());
+        ResourceBundle bundleDoc = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", checkParams.getLocaleDoc());
+        ResourceBundle bundleInterface = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", checkParams.getLocaleInterface());
         ErrorsList errors = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
         List<IBodyElement> bodyElements = document.getBodyElements();
 
-        String maskTableName = bundle.getString("maskTableName");
-        String maskTableCont = bundle.getString("maskTableCont");
+        String maskTableName = bundleDoc.getString("maskTableName");
+        String maskTableCont = bundleDoc.getString("maskTableCont");
 
         if (!document.getTables().isEmpty()) {
             for (int i = 0; i < bodyElements.size(); i++) {
@@ -32,18 +33,18 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
                     XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1);
 
                     if (!paragraphBFName.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams), bundle.getString("errorNoBlankBf"));
+                        errors.addError(getTablePlace(table, checkParams), bundleInterface.getString("errorNoBlankBf"));
                     }
                     if (!nextParagraph.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams), bundle.getString("errorNoBlankAf"));
+                        errors.addError(getTablePlace(table, checkParams), bundleInterface.getString("errorNoBlankAf"));
                     }
                     if (!prevParagraph.getText().matches(maskTableName)) {
                         if (prevParagraph.getText().matches(maskTableCont)) {
                             if (!(bodyElements.get(i - 3) instanceof XWPFTable)) {
-                                errors.addError(getTablePlace(table, checkParams), bundle.getString("errorContNoPrev"));
+                                errors.addError(getTablePlace(table, checkParams), bundleInterface.getString("errorContNoPrev"));
                             }
                         } else {
-                            errors.addError(getTablePlace(table, checkParams), bundle.getString("errorNoName"));
+                            errors.addError(getTablePlace(table, checkParams), bundleInterface.getString("errorNoName"));
                         }
                     }
                 }
@@ -54,20 +55,20 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
 
 
     private String getTablePlace(XWPFTable table, CheckParams params) {
-        ResourceBundle bundle = ResourceBundle.getBundle("resoursesboundles/table", params.getLocaleInterfaces());
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         return bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
     }
 
     // for checking table numbering??
     private List<XWPFParagraph> findAllTableNames(XWPFDocument xwpfDocument, CheckParams checkParams) {
-        String maskTableName = ResourceBundle.getBundle("resoursesboundles/table", checkParams.getLocaleDoc()).getString("maskTableName");
+        String maskTableName = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", checkParams.getLocaleDoc()).getString("maskTableName");
         return xwpfDocument.getParagraphs().stream()
                     .filter(p -> p.getText().matches(maskTableName))
                     .collect(Collectors.toList());
     }
 
     private List<XWPFParagraph> findAllTableConts(XWPFDocument xwpfDocument, CheckParams checkParams) {
-        String maskTableCont = ResourceBundle.getBundle("resoursesboundles/table", checkParams.getLocaleDoc()).getString("maskTableCont");
+        String maskTableCont = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", checkParams.getLocaleDoc()).getString("maskTableCont");
         return xwpfDocument.getParagraphs().stream()
                     .filter(p -> p.getText().matches(maskTableCont))
                     .collect(Collectors.toList());
