@@ -1,5 +1,7 @@
 package csit.semit.semitchecker.docutils;
 
+import csit.semit.semitchecker.serviceenums.Lang;
+import csit.semit.semitchecker.serviceenums.MultiLang;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +16,6 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSettings;
 
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -29,13 +30,16 @@ public class CalcDocStatistic {
     //Имя файла (бо document -  це байти файлу, фактично - розборка файлу)
     private String docName;
     //мова тексту
-    private String docLocale;
+    private Locale docLocale;
+    private Locale wordLocale;
 
-    public CalcDocStatistic(InputStream inputStream, String docName, String locale) throws IOException {
+    public CalcDocStatistic(InputStream inputStream, String docName, String localeDoc, String localeWord) throws IOException {
         document = new XWPFDocument(inputStream);
         this.docName = docName;
         this.document = document;
-        this.docLocale = locale;
+        this.docLocale = Lang.valueOf(localeDoc).getLocale();
+        this.wordLocale = MultiLang.valueOf(localeWord).getLocale();
+
     }
 
     public DocStatistic calcParam() {
@@ -47,7 +51,8 @@ public class CalcDocStatistic {
         res.setCountTables(this.getCountTables());
         res.setCountSources(this.getCountSources());
         res.setCountAppendixes(this.getCountAppendixes());
-        res.prepareAbstract();
+        res.prepareAbstractUA();
+        res.prepareAbstractEN();
         return res;
     }
 
@@ -93,32 +98,33 @@ public class CalcDocStatistic {
         //TODO Будет ли работать без libreoffice
         File inputFile = new File(docName);
         File outputFile = new File(docName.replace(".docx", ".pdf"));
-
-        // Запускаем LibreOffice для конвертации
-        var officeManager = LocalOfficeManager.install();
-        try {
-            officeManager.start();
-
-            // Конвертация .docx → .pdf
-            LocalConverter.builder()
-                    .officeManager(officeManager)
-                    .build()
-                    .convert(inputFile)
-                    .to(outputFile)
-                    .as(DefaultDocumentFormatRegistry.PDF)
-                    .execute();
-
-            System.out.println("Конвертация завершена ... ");
-
-        } catch (OfficeException e) {
-            throw new RuntimeException("Ошибка при конвертации в pdf", e);
-        } finally {
+        //Проверить наличие файла пдф с таким именем, чтобы дважды не делать конвертацию - это занимает время
+        if (!outputFile.exists()) {
+            // Запускаем LibreOffice для конвертации
+            var officeManager = LocalOfficeManager.install();
             try {
-                officeManager.stop();
-            } catch (OfficeException ignored) {
+                officeManager.start();
+
+                // Конвертация .docx → .pdf
+                LocalConverter.builder()
+                        .officeManager(officeManager)
+                        .build()
+                        .convert(inputFile)
+                        .to(outputFile)
+                        .as(DefaultDocumentFormatRegistry.PDF)
+                        .execute();
+
+                System.out.println("Конвертация завершена ... ");
+
+            } catch (OfficeException e) {
+                throw new RuntimeException("Ошибка при конвертации в pdf", e);
+            } finally {
+                try {
+                    officeManager.stop();
+                } catch (OfficeException ignored) {
+                }
             }
         }
-
         // Получаем количество страниц в PDF
         //!!! Но додати треба одинцю, бо чистий файл без титулок починається із сторінки 2
         try (PDDocument document = PDDocument.load(outputFile)) {
@@ -149,11 +155,15 @@ public class CalcDocStatistic {
         //Если таблица разделяется на две и более частей все они считаются отдельно!!!
         //Что выдать реальное, выполняется проход по заголовкам таблицы
         String styleName = "Tablenumber";
+        //Загрузити локацію та назви стилів заголовків
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", docLocale);
+        String tableEnd = bundle.getString("table_end").toUpperCase();
+        String tableContinue = bundle.getString("table_continue").toUpperCase();
         List<XWPFParagraph> paragraphs = this.getParagraphesDocDefStyle(styleName);
         if (paragraphs.size() > 0) {
             for (int i = 0; i < paragraphs.size(); i++) {
-                if (paragraphs.get(i).getText().toUpperCase().startsWith("КІНЕЦЬ ТАБЛИЦІ") ||
-                        paragraphs.get(i).getText().toUpperCase().startsWith("ПРОДОВЖЕННЯ ТАБЛИЦІ")) {
+                if (paragraphs.get(i).getText().toUpperCase().startsWith(tableEnd) ||
+                        paragraphs.get(i).getText().toUpperCase().startsWith(tableContinue)) {
                     count--;
                 }
             }
@@ -165,14 +175,20 @@ public class CalcDocStatistic {
         int count = -1;
         //Найти абзац 'Список джерел інформації' із стилем 'header 1'
         //Краще перетворити у всі прописні
-        String styleName = "1";
+//        String styleName = "1";
+        //Загрузити локацію та назви стилів заголовків
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", wordLocale);
+        String h1 = bundle.getString("H1");
         List<XWPFParagraph> paragraphs = getParagraphesDoc();
-        String etalonReferences = "Список джерел інформації".toUpperCase();
+//        String etalonReferences = "Список джерел інформації".toUpperCase();
+        //Загрузити локацію та назви стилів заголовків
+        bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", docLocale);
+        String etalonReferences = bundle.getString("litra").toUpperCase();
         int posSources = -1;
         int i = 0;
         if (paragraphs.size() > 0) {
             for (; i < paragraphs.size(); i++) {
-                if ((paragraphs.get(i).getStyle() != null) && paragraphs.get(i).getStyle().equals(styleName)) {
+                if ((paragraphs.get(i).getStyle() != null) && paragraphs.get(i).getStyle().equals(h1)) {
                     String textP = paragraphs.get(i).getText().toUpperCase();
                     if (textP.equals(etalonReferences)) {
                         posSources = i + 1;
@@ -191,7 +207,7 @@ public class CalcDocStatistic {
         //
         if (posSources > -1) {
             for (i = posSources; i < paragraphs.size(); i++) {
-                if ((paragraphs.get(i).getStyle() != null) && !paragraphs.get(i).getStyle().equals(styleName)) {
+                if ((paragraphs.get(i).getStyle() != null) && !paragraphs.get(i).getStyle().equals(h1)) {
                     count++;
                 } else {
                     break;
@@ -206,7 +222,7 @@ public class CalcDocStatistic {
 
         }
 
-
+        count = count==-1? 0 : count;
         return count;
     }
 
@@ -214,13 +230,16 @@ public class CalcDocStatistic {
         //count = -1 - це буде ознакою порушень структури
         // В даному випадку - немає ЗМІСТ або неправильне форматування заголовків
         int count = -1;
-        //Получить список заголовков1
-        String styleName = "1";
-        List<XWPFParagraph> paragraphs = getParagraphesDocDefStyle(styleName);
-        //Найти абзац 'Список джерел інформації'
+        //Загрузити локацію та назви стилів заголовків
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", wordLocale);
+        String h1 = bundle.getString("H1");
+        List<XWPFParagraph> paragraphs = getParagraphesDocDefStyle(h1);
+        //Найти абзац 'Список джерел інформації' або "References list"
         //Краще перетворити у всі прописні
         //Все Заголовок1 после него - ДОДАТКИ!!!
-        String etalonReferences = "Список джерел інформації".toUpperCase();
+        //Загрузити локацію та назви стилів заголовків
+        bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", docLocale);
+        String etalonReferences = bundle.getString("litra").toUpperCase();
         if (paragraphs.size() > 0) {
             int i = 0;
             for (i = paragraphs.size() - 1; i > -1; i--) {
@@ -237,6 +256,7 @@ public class CalcDocStatistic {
                 count++;
             }
         }
+        count = count==-1? 0 : count;
         return count;
     }
 

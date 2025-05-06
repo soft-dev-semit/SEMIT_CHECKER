@@ -17,16 +17,20 @@ import java.util.Set;
 public class DocStatisticCalcTest {
 
     // Имя ворд-файлу для тестування обробки
-    String docName = "checker_test_file_kr_ua2.docx";
-//    String docName = "checker_test_file_kr_ua2-ENWord.docx";
+    String docName = "DRB_test_ua_UA.docx";
+//    String docName = "DRB_test_ua_EN.docx";
+//    String docName = "DRB_test_en_UA.docx";
 //    String docName = "Test-file-pereliki.uk.en.docx";
 //    String docName = "Test-file-pereliki.docx";
+
+    String docLocale = "UA";
+    String wordLocale = "UA";
 
     @Test
     void showDocParagraphs() throws IOException {
 
         Path path = Paths.get(docName);
-        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path),docName,"UA");
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path),docName,docLocale,wordLocale);
         List<XWPFParagraph> paragraphs = calcDocStatistic.getParagraphesDoc();
         for (int i = 0; i < paragraphs.size(); i++) {
             System.out.println("Абзац " + (i + 1) + "(Стиль - "+ paragraphs.get(i).getStyle()  +"): " + paragraphs.get(i).getText());
@@ -37,7 +41,7 @@ public class DocStatisticCalcTest {
     void showDocDefStyleParagraphs() throws IOException {
         System.out.println("TEST#showDocDefStyleParagraphs");
         Path path = Paths.get(docName);
-        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path),docName,"UA");
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path),docName,docLocale,wordLocale);
         String styleName = "Tablenumber";
         List<XWPFParagraph> paragraphs = calcDocStatistic.getParagraphesDocDefStyle(styleName);
         for (int i = 0; i < paragraphs.size(); i++) {
@@ -48,7 +52,7 @@ public class DocStatisticCalcTest {
     @Test
     void calcParams() throws IOException {
         Path path = Paths.get(docName);
-        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path),docName,"UA");
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, docLocale, wordLocale);
         System.out.println("CountPages = "+ calcDocStatistic.getCountPages());
         System.out.println("CountFigures = "+ calcDocStatistic.getCountFigures());
         System.out.println("CountTables = "+ calcDocStatistic.getCountTables());
@@ -60,21 +64,22 @@ public class DocStatisticCalcTest {
     @Test
     void testPrepareAbstract() throws IOException {
         Path path = Paths.get(docName);
-        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, "UA");
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, docLocale, wordLocale);
         DocStatistic statistic = calcDocStatistic.calcParam();
         System.out.println("CountPages = "+ statistic.getCountPages());
         System.out.println("CountFigures = "+ statistic.getCountFigures());
         System.out.println("CountTables = "+ statistic.getCountTables());
         System.out.println("CountSources = "+ statistic.getCountSources());
         System.out.println("CountCountAppendixes = "+ statistic.getCountAppendixes());
-        System.out.println("AbstractRow = "+ statistic.getAbstractRow());
+        System.out.println("AbstractUARow = "+ statistic.getAbstractUARow());
+        System.out.println("AbstractENRow = "+ statistic.getAbstractENRow());
     }
 
 
     @Test
     void showUsedStyles() throws IOException {
         Path path = Paths.get(docName);
-        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, "UA");
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, docLocale, wordLocale);
         Set<XWPFStyle> usedStyles = calcDocStatistic.getUsedStyles();
         if (usedStyles.isEmpty()) {
             System.out.println("В документе нет использованных стилей.");

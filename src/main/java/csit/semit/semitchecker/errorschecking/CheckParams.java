@@ -1,5 +1,7 @@
 package csit.semit.semitchecker.errorschecking;
 
+import csit.semit.semitchecker.serviceenums.Lang;
+import csit.semit.semitchecker.serviceenums.MultiLang;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,7 +35,7 @@ public class CheckParams {
     public Locale localeInterface = Lang.UA.getLocale();
 
     public CheckParams() {
-        localeWord = MultiLang.EN.getLocale();
+        localeWord = MultiLang.UA.getLocale();
         localeDoc = Lang.UA.getLocale();
         localeInterface = Lang.UA.getLocale();
     }

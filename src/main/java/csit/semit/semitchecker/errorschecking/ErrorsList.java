@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Locale;
 
 public class ErrorsList {
-    private List<CheckError> errorList;
+    private List<CheckError> errors;
     private Locale localeDoc;
     private Locale localeWord;
     private String errorsType;
 
     public ErrorsList(Locale localeWord, Locale localeDoc, String errorsType) {
-        this.errorList = new ArrayList<>();
+        this.errors = new ArrayList<>();
         this.localeWord = localeWord;
         this.localeDoc = localeDoc;
         this.errorsType = errorsType;
@@ -19,8 +19,8 @@ public class ErrorsList {
 
     //Метод, що додає до переліку помилку та місце її знаходження
     public void addError(String errorPlace, String errorText) {
-        if (errorList != null) {
-            errorList.add(new CheckError(errorPlace, errorText));
+        if (errors != null) {
+            errors.add(new CheckError(errorPlace, errorText));
         }
     }
 
@@ -33,22 +33,23 @@ public class ErrorsList {
 
     //Метод, який додає до поточного переліку всі помилки з іншого переліку
     public void addErrorList(ErrorsList otherErrorList) {
-        if (errorList != null) {
-            for (CheckError checkError: otherErrorList.getErrorList())
-            errorList.add(checkError);
+        if (errors != null) {
+            for (CheckError checkError: otherErrorList.getErrors())
+            errors.add(checkError);
         }
     }
 
     public void clearErrorList() {
-        if (errorList != null) {
-            errorList.clear();
+        if (errors != null) {
+            errors.clear();
         }
     }
 
-    public List<CheckError> getErrorList() {
-        return errorList;
+    public List<CheckError> getErrors() {
+        return errors;
     }
 
-
-
+    public String getErrorsType() {
+        return errorsType;
+    }
 }

@@ -1,4 +1,4 @@
-package csit.semit.semitchecker.errorschecking;
+package csit.semit.semitchecker.serviceenums;
 
 import java.util.Locale;
 

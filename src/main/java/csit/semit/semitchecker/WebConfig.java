@@ -1,6 +1,6 @@
 package csit.semit.semitchecker;
 
-import csit.semit.semitchecker.errorschecking.Lang;
+import csit.semit.semitchecker.serviceenums.Lang;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.LocaleResolver;

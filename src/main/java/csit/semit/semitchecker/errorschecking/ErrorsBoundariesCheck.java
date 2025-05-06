@@ -8,8 +8,8 @@ public class ErrorsBoundariesCheck implements IErrorsCheckable{
     //Деякі сторінки можуть бути в горизонтальній орієнтації
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
-
-        System.out.println("CHECKED! ----- "+typeErrors);
+//        System.out.println("CHECKED! ----- "+typeErrors);
         return null;
     }
+
 }

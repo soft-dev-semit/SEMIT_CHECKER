@@ -1,10 +1,10 @@
 package csit.semit.semitchecker.errorschecking;
 
+import csit.semit.semitchecker.serviceenums.PerelikType;
 import lombok.Getter;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.cglib.core.Local;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,34 +13,26 @@ import java.util.ResourceBundle;
 
 public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
+   @Override
+   public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
+//        System.out.println("CHECKING......  " + typeErrors);
 
-
-    //TODO Двухглавов - перевірка оформлення переліків
-
-    @Override
-    public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
-        System.out.println("CHECKING......  " + typeErrors);
-        ErrorsList errorsListFull = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
-        System.out.println("CHECK MarkedStd Lists");
-        //Checking all marked lists
-        ErrorsList resCheckPerelikMarkedStd = checkPereliksOfType(xwpfDocument,checkParams,
-                errorsListFull,typeErrors,PerelikType.ListMarkedSTD);
-        //Find and check all Numeric1 lists
-        ErrorsList resCheckPerelikNumericWithBracket = checkPereliksOfType(xwpfDocument,checkParams,
-                errorsListFull,typeErrors,PerelikType.ListNumericWithBracket);
-        //Find and check all NumericWith Brackets lists
-        ErrorsList resCheckPerelikNumeric1 = checkPereliksOfType(xwpfDocument,checkParams,
-                errorsListFull,typeErrors,PerelikType.ListNumeric1);
-        //Find and check all NumericA lists
-        ErrorsList resCheckPerelikNumericA = checkPereliksOfType(xwpfDocument,checkParams,
-                errorsListFull,typeErrors,PerelikType.ListNumericA);
-        return errorsListFull;
+        //Створюєтся перелік для зберігання помилок
+//        ErrorsPerelikiCheck errPerCheck = new ErrorsPerelikiCheck();
+//        System.out.println("\nПОМИЛКИ ПЕРЕВІРКИ ПЕРЕЛІКІВ: "+typeErrors);
+        ErrorsList errPereliki = new ErrorsList(checkParams.getLocaleWord(), checkParams.getLocaleDoc(), typeErrors);
+        //Проверка всіх типів переліків, визначених в enum PerelikType
+        for (PerelikType type : PerelikType.values()) {
+//            System.out.println("CHECKING PERELIKS ---  " + type+"............");
+            errPereliki = this.checkPereliksOfType(xwpfDocument, checkParams, errPereliki, typeErrors, type);
+        }
+        return errPereliki;
     }
 
     //Метод перевірки переліків
     public ErrorsList checkPereliksOfType(XWPFDocument xwpfDocument, CheckParams checkParams,
                                           ErrorsList errorsList, String typeErrors, PerelikType pt) {
-        System.out.println("\nCHECKING PERELIKS ---  " + pt);
+//        System.out.println("\nCHECKING PERELIKS ---  " + pt);
 
         //Checking all marked lists
         ErrorsPerelikiCheck errPerCheck = new ErrorsPerelikiCheck();
@@ -175,7 +167,6 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         do {
             p = xwpfParagraphs.get(i);
             if (p.getStyle() != null) {
-                //TODO Набор з змінним для перевірки, в залежності від мови дока
                 if (p.getStyle().equals(h4) || p.getStyle().equals(h3)
                         || p.getStyle().equals(h2)|| p.getStyle().equals(h1)) {
                     int sizeHeader = p.getText().length()<=27? p.getText().length() : 27;
