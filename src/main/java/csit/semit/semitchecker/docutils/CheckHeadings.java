@@ -12,38 +12,13 @@ public class CheckHeadings {
 
     private final MessageSource messageSource;
     private final TypicalHeadings typicalHeadings;
-
-    // Мапа стилів заголовків за локаллю Office
-    private Map<String, Map<Integer, String>> headingStyles = new HashMap<>();
+    private final TypicalHeadingStyles typicalHeadingStyles;
 
     @Autowired
-    public CheckHeadings(MessageSource messageSource, TypicalHeadings typicalHeadings) {
+    public CheckHeadings(MessageSource messageSource, TypicalHeadings typicalHeadings, TypicalHeadingStyles typicalHeadingStyles) {
         this.messageSource = messageSource;
         this.typicalHeadings = typicalHeadings;
-        initializeHeadingStyles();
-    }
-
-    private void initializeHeadingStyles() {
-        // UA Office locale heading styles
-        Map<Integer, String> uaStyles = new HashMap<>();
-        uaStyles.put(1, "Заголовок 1");
-        uaStyles.put(2, "Заголовок 2");
-        uaStyles.put(3, "Заголовок 3");
-        headingStyles.put("UA", uaStyles);
-
-        // EN Office locale heading styles
-        Map<Integer, String> enStyles = new HashMap<>();
-        enStyles.put(1, "Heading 1");
-        enStyles.put(2, "Heading 2");
-        enStyles.put(3, "Heading 3");
-        headingStyles.put("EN", enStyles);
-
-        // RU Office locale heading styles
-        Map<Integer, String> ruStyles = new HashMap<>();
-        ruStyles.put(1, "Заголовок 1");
-        ruStyles.put(2, "Заголовок 2");
-        ruStyles.put(3, "Заголовок 3");
-        headingStyles.put("RU", ruStyles);
+        this.typicalHeadingStyles = typicalHeadingStyles;
     }
 
     /**
@@ -59,6 +34,109 @@ public class CheckHeadings {
     }
 
     /**
+     * Перевірити, чи є абзац типовим заголовком без стилю заголовка
+     * @param para Абзац для перевірки
+     * @param docLanguage Мова документа (UA/EN)
+     * @param headingStyles Список стилів заголовків для виключення
+     * @return true, якщо абзац є типовим заголовком без стилю
+     */
+    private boolean isUnstyledTypicalHeading(XWPFParagraph para, String docLanguage, List<String> headingStyles) {
+        String text = para.getText().trim();
+        if (text.isEmpty()) return false;
+        if (para.getStyle() != null && headingStyles.contains(para.getStyle())) return false;
+        return typicalHeadings.isStandardHeading(text, docLanguage) && !text.matches(".*[.,!?;]$");
+    }
+
+    /**
+     * Перевірити, чи є абзац нумерованим заголовком без стилю заголовка
+     * @param para Абзац для перевірки
+     * @param headingStyles Список стилів заголовків для виключення
+     * @return true, якщо абзац є нумерованим заголовком без стилю
+     */
+    private boolean isUnstyledNumberedHeading(XWPFParagraph para, List<String> headingStyles) {
+        String text = para.getText().trim();
+        if (text.isEmpty()) return false;
+        if (para.getStyle() != null && headingStyles.contains(para.getStyle())) return false;
+        // Patterns: "1 Chapter", "1.1 Chapter", "1.1.1 Chapter", "1.1.1.1 Chapter"
+        // or "1 Chapter. Chapter", "1.1 Chapter. Chapter", etc.
+        return (text.matches("^\\d+(\\.\\d+){0,3}\\s+\\w+.*$") ||
+                text.matches("^\\d+(\\.\\d+){0,3}\\s+\\w+.*\\.\\s+\\w+.*$")) &&
+                !text.matches(".*[.,!?;]$");
+    }
+
+    /**
+     * Перевірити, чи є абзац типовим заголовком без стилю (для тестування)
+     * @param para Абзац для перевірки
+     * @param docLanguage Мова документа (UA/EN)
+     * @param headingStyles Список стилів заголовків для виключення
+     * @return true, якщо абзац є типовим заголовком без стилю
+     */
+    public boolean isUnstyledTypicalHeadingForTest(XWPFParagraph para, String docLanguage, List<String> headingStyles) {
+        return isUnstyledTypicalHeading(para, docLanguage, headingStyles);
+    }
+
+    /**
+     * Перевірити, чи є абзац нумерованим заголовком без стилю (для тестування)
+     * @param para Абзац для перевірки
+     * @param headingStyles Список стилів заголовків для виключення
+     * @return true, якщо абзац є нумерованим заголовком без стилю
+     */
+    public boolean isUnstyledNumberedHeadingForTest(XWPFParagraph para, List<String> headingStyles) {
+        return isUnstyledNumberedHeading(para, headingStyles);
+    }
+
+    /**
+     * Отримати список обов'язкових розділів для заданої мови
+     * @param docLanguage Мова документа (UA/EN)
+     * @return Масив обов'язкових розділів
+     */
+    public String[] getRequiredSections(String docLanguage) {
+        return typicalHeadings.getAllHeadings(docLanguage);
+    }
+
+    /**
+     * Витягти всі заголовки (стилізовані та нестилізовані) з документа
+     * @param document Документ XWPFDocument
+     * @param docLanguage Мова документа (UA/EN)
+     * @param officeLocale Локаль Office (UA/EN/RU)
+     * @return Список заголовків із рівнями (1, 2, 3 для стилізованих, 0 для нестилізованих)
+     */
+    public List<Map.Entry<String, Integer>> extractAllHeadings(XWPFDocument document, String docLanguage, String officeLocale) {
+        List<Map.Entry<String, Integer>> headings = new ArrayList<>();
+        List<String> headingStyles = Arrays.asList(
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_1, officeLocale),
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_2, officeLocale),
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_3, officeLocale)
+        );
+
+        for (XWPFParagraph para : document.getParagraphs()) {
+            String style = para.getStyle();
+            String text = para.getText().trim();
+
+            if (text.isEmpty()) continue;
+
+            // Check for styled headings
+            if (style != null) {
+                if (style.equals(headingStyles.get(0))) { // Heading 1
+                    headings.add(new AbstractMap.SimpleEntry<>(text, 1));
+                } else if (style.equals(headingStyles.get(1))) { // Heading 2
+                    headings.add(new AbstractMap.SimpleEntry<>(text, 2));
+                } else if (style.equals(headingStyles.get(2))) { // Heading 3
+                    headings.add(new AbstractMap.SimpleEntry<>(text, 3));
+                }
+            }
+
+            // Check for unstyled headings
+            if (isUnstyledTypicalHeading(para, docLanguage, headingStyles) ||
+                    isUnstyledNumberedHeading(para, headingStyles)) {
+                headings.add(new AbstractMap.SimpleEntry<>(text, 0)); // Level 0 for unstyled headings
+            }
+        }
+
+        return headings;
+    }
+
+    /**
      * Перевірка наявності всіх обов'язкових структурних елементів
      * @param document Документ XWPFDocument для перевірки
      * @param docLanguage Мова документа (UA/EN)
@@ -69,18 +147,17 @@ public class CheckHeadings {
         List<String> errors = new ArrayList<>();
         String[] requiredSections = typicalHeadings.getAllHeadings(docLanguage);
 
-        // Вилучити всі заголовки з документа
-        List<String> documentHeadings = new ArrayList<>();
-        for (XWPFParagraph para : document.getParagraphs()) {
-            if (para.getStyle() != null && para.getStyle().startsWith(headingStyles.get(docLanguage).get(1))) {
-                documentHeadings.add(para.getText());
+        List<Map.Entry<String, Integer>> documentHeadings = extractAllHeadings(document, docLanguage, docLanguage);
+        List<String> headingTexts = new ArrayList<>();
+        for (Map.Entry<String, Integer> heading : documentHeadings) {
+            if (heading.getValue() == 1 || heading.getValue() == 0) {
+                headingTexts.add(heading.getKey());
             }
         }
 
-        // Перевірка відсутніх розділів
         for (String requiredSection : requiredSections) {
             boolean found = false;
-            for (String heading : documentHeadings) {
+            for (String heading : headingTexts) {
                 if (heading.trim().equalsIgnoreCase(requiredSection)) {
                     found = true;
                     break;
@@ -104,55 +181,50 @@ public class CheckHeadings {
     public List<String> checkHeadingSpacing(XWPFDocument document, String uiLanguage, String officeLocale) {
         List<String> errors = new ArrayList<>();
         List<XWPFParagraph> paragraphs = document.getParagraphs();
+        List<Map.Entry<String, Integer>> headings = extractAllHeadings(document, officeLocale, officeLocale);
 
-        for (int i = 0; i < paragraphs.size(); i++) {
-            XWPFParagraph para = paragraphs.get(i);
+        for (Map.Entry<String, Integer> headingEntry : headings) {
+            String headingText = headingEntry.getKey();
+            int headingLevel = headingEntry.getValue();
 
-            // Перевірка, чи є параграф заголовком
-            boolean isHeading = false;
-            int headingLevel = 0;
-
-            if (para.getStyle() != null) {
-                for (int level = 1; level <= 3; level++) {
-                    if (para.getStyle().equals(headingStyles.get(officeLocale).get(level))) {
-                        isHeading = true;
-                        headingLevel = level;
-                        break;
-                    }
+            // Find the paragraph index for this heading
+            int paraIndex = -1;
+            for (int i = 0; i < paragraphs.size(); i++) {
+                if (paragraphs.get(i).getText().trim().equals(headingText)) {
+                    paraIndex = i;
+                    break;
                 }
             }
 
-            if (isHeading) {
-                // Перевірка наявності пустого рядка перед заголовком (окрім першого параграфа)
-                if (i > 0) {
-                    XWPFParagraph prevPara = paragraphs.get(i - 1);
-                    if (!prevPara.getText().trim().isEmpty()) {
-                        errors.add(getMessage("error.no.empty.line.before", uiLanguage, para.getText()));
+            if (paraIndex == -1) continue; // Heading not found (unlikely, but for safety)
+
+            // Check for empty line before
+            if (paraIndex > 0) {
+                XWPFParagraph prevPara = paragraphs.get(paraIndex - 1);
+                if (!prevPara.getText().trim().isEmpty()) {
+                    errors.add(getMessage("error.no.empty.line.before", uiLanguage, headingText));
+                }
+            }
+
+            // Check for empty line after
+            if (paraIndex < paragraphs.size() - 1) {
+                XWPFParagraph nextPara = paragraphs.get(paraIndex + 1);
+                if (!nextPara.getText().trim().isEmpty()) {
+                    errors.add(getMessage("error.no.empty.line.after", uiLanguage, headingText));
+                }
+            }
+
+            // Check for sufficient text after Heading 1 or unstyled heading
+            if ((headingLevel == 1 || headingLevel == 0) && paraIndex < paragraphs.size() - 2) {
+                boolean hasMoreThanOneLine = false;
+                for (int j = paraIndex + 1; j < paraIndex + 3 && j < paragraphs.size(); j++) {
+                    if (!paragraphs.get(j).getText().trim().isEmpty()) {
+                        hasMoreThanOneLine = true;
+                        break;
                     }
                 }
-
-                // Перевірка наявності пустого рядка після заголовка (окрім останнього параграфа)
-                if (i < paragraphs.size() - 1) {
-                    XWPFParagraph nextPara = paragraphs.get(i + 1);
-                    if (!nextPara.getText().trim().isEmpty()) {
-                        errors.add(getMessage("error.no.empty.line.after", uiLanguage, para.getText()));
-                    }
-                }
-
-                // Для заголовків 1-го рівня перевірка, чи є більше одного рядка тексту на сторінці
-                if (headingLevel == 1 && i < paragraphs.size() - 2) {
-                    // Це спрощено - у реальній реалізації потрібно перевіряти,
-                    // чи знаходяться ці параграфи на одній сторінці
-                    boolean hasMoreThanOneLine = false;
-                    for (int j = i + 1; j < i + 3 && j < paragraphs.size(); j++) {
-                        if (!paragraphs.get(j).getText().trim().isEmpty()) {
-                            hasMoreThanOneLine = true;
-                            break;
-                        }
-                    }
-                    if (!hasMoreThanOneLine) {
-                        errors.add(getMessage("error.not.enough.text.after.heading", uiLanguage, para.getText()));
-                    }
+                if (!hasMoreThanOneLine) {
+                    errors.add(getMessage("error.not.enough.text.after.heading", uiLanguage, headingText));
                 }
             }
         }
@@ -174,19 +246,21 @@ public class CheckHeadings {
         int currentSection = 0;
         int currentSubsection = 0;
 
-        for (XWPFParagraph para : document.getParagraphs()) {
-            if (para.getStyle() == null) continue;
+        List<Map.Entry<String, Integer>> headings = extractAllHeadings(document, officeLocale, officeLocale);
 
-            String text = para.getText().trim();
+        for (Map.Entry<String, Integer> headingEntry : headings) {
+            String text = headingEntry.getKey();
+            int level = headingEntry.getValue();
 
-            // Пропустити ненумеровані заголовки, як ABSTRACT, CONTENTS тощо
+            // Skip unstyled headings for order check (they will be caught by checkUnstyledHeadings)
+            if (level == 0) continue;
+
+            // Skip headings that are all uppercase and don't start with a number
             if (text.equals(text.toUpperCase()) && !text.matches("^\\d+.*")) {
                 continue;
             }
 
-            // Перевірка нумерованих заголовків (1, 1.1, 1.1.1)
-            if (para.getStyle().equals(headingStyles.get(officeLocale).get(1))) {
-                // Заголовок розділу (1, 2, 3...)
+            if (level == 1) { // Heading 1
                 if (text.matches("^\\d+\\s+.*")) {
                     try {
                         int chapterNum = Integer.parseInt(text.split("\\s+")[0]);
@@ -200,17 +274,14 @@ public class CheckHeadings {
                         errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
                     }
                 }
-            } else if (para.getStyle().equals(headingStyles.get(officeLocale).get(2))) {
-                // Заголовок підрозділу (1.1, 1.2, 2.1...)
+            } else if (level == 2) { // Heading 2
                 if (text.matches("^\\d+\\.\\d+\\s+.*")) {
                     String[] parts = text.split("\\s+")[0].split("\\.");
                     try {
                         int chapterNum = Integer.parseInt(parts[0]);
                         int sectionNum = Integer.parseInt(parts[1]);
 
-                        if (chapterNum != currentChapter) {
-                            errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
-                        } else if (sectionNum != currentSection + 1) {
+                        if (chapterNum != currentChapter || sectionNum != currentSection + 1) {
                             errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
                         }
 
@@ -220,8 +291,7 @@ public class CheckHeadings {
                         errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
                     }
                 }
-            } else if (para.getStyle().equals(headingStyles.get(officeLocale).get(3))) {
-                // Заголовок пункту (1.1.1, 1.1.2, 2.1.1...)
+            } else if (level == 3) { // Heading 3
                 if (text.matches("^\\d+\\.\\d+\\.\\d+\\s+.*")) {
                     String[] parts = text.split("\\s+")[0].split("\\.");
                     try {
@@ -229,9 +299,7 @@ public class CheckHeadings {
                         int sectionNum = Integer.parseInt(parts[1]);
                         int subsectionNum = Integer.parseInt(parts[2]);
 
-                        if (chapterNum != currentChapter || sectionNum != currentSection) {
-                            errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
-                        } else if (subsectionNum != currentSubsection + 1) {
+                        if (chapterNum != currentChapter || sectionNum != currentSection || subsectionNum != currentSubsection + 1) {
                             errors.add(getMessage("error.wrong.heading.order", uiLanguage, text));
                         }
 
@@ -255,39 +323,49 @@ public class CheckHeadings {
      */
     public List<String> checkChapterFormatting(XWPFDocument document, String uiLanguage, String officeLocale) {
         List<String> errors = new ArrayList<>();
+        List<Map.Entry<String, Integer>> headings = extractAllHeadings(document, officeLocale, officeLocale);
 
-        for (XWPFParagraph para : document.getParagraphs()) {
-            if (para.getStyle() != null && para.getStyle().equals(headingStyles.get(officeLocale).get(1))) {
-                String text = para.getText().trim();
+        for (Map.Entry<String, Integer> headingEntry : headings) {
+            String text = headingEntry.getKey();
+            int level = headingEntry.getValue();
 
-                // Перевірка на ВЕЛИКІ ЛІТЕРИ
-                if (!text.equals(text.toUpperCase())) {
-                    errors.add(getMessage("error.chapter.not.uppercase", uiLanguage, text));
-                }
+            // Only check Heading 1 (styled headings)
+            if (level != 1) continue;
 
-                // Перевірка на напівжирний шрифт
-                boolean isBold = false;
-                for (XWPFRun run : para.getRuns()) {
-                    if (run.isBold()) {
-                        isBold = true;
-                        break;
-                    }
+            // Find the corresponding paragraph to check formatting
+            XWPFParagraph para = null;
+            for (XWPFParagraph p : document.getParagraphs()) {
+                if (p.getText().trim().equals(text)) {
+                    para = p;
+                    break;
                 }
-                if (!isBold) {
-                    errors.add(getMessage("error.chapter.not.bold", uiLanguage, text));
-                }
+            }
 
-                // Перевірка вирівнювання
-                if (para.getAlignment() != ParagraphAlignment.CENTER &&
-                        para.getAlignment() != ParagraphAlignment.LEFT &&
-                        para.getIndentationFirstLine() == 0) {
-                    errors.add(getMessage("error.chapter.wrong.alignment", uiLanguage, text));
-                }
+            if (para == null) continue;
 
-                // Перевірка на крапку в кінці
-                if (text.endsWith(".")) {
-                    errors.add(getMessage("error.chapter.has.period", uiLanguage, text));
+            if (!text.equals(text.toUpperCase())) {
+                errors.add(getMessage("error.chapter.not.uppercase", uiLanguage, text));
+            }
+
+            boolean isBold = false;
+            for (XWPFRun run : para.getRuns()) {
+                if (run.isBold()) {
+                    isBold = true;
+                    break;
                 }
+            }
+            if (!isBold) {
+                errors.add(getMessage("error.chapter.not.bold", uiLanguage, text));
+            }
+
+            if (para.getAlignment() != ParagraphAlignment.CENTER &&
+                    para.getAlignment() != ParagraphAlignment.LEFT &&
+                    para.getIndentationFirstLine() == 0) {
+                errors.add(getMessage("error.chapter.wrong.alignment", uiLanguage, text));
+            }
+
+            if (text.endsWith(".")) {
+                errors.add(getMessage("error.chapter.has.period", uiLanguage, text));
             }
         }
 
@@ -303,65 +381,97 @@ public class CheckHeadings {
      */
     public List<String> checkSubsectionFormatting(XWPFDocument document, String uiLanguage, String officeLocale) {
         List<String> errors = new ArrayList<>();
+        List<Map.Entry<String, Integer>> headings = extractAllHeadings(document, officeLocale, officeLocale);
+
+        for (Map.Entry<String, Integer> headingEntry : headings) {
+            String text = headingEntry.getKey();
+            int level = headingEntry.getValue();
+
+            // Only check Heading 2 and Heading 3 (styled headings)
+            if (level != 2 && level != 3) continue;
+
+            // Find the corresponding paragraph to check formatting
+            XWPFParagraph para = null;
+            for (XWPFParagraph p : document.getParagraphs()) {
+                if (p.getText().trim().equals(text)) {
+                    para = p;
+                    break;
+                }
+            }
+
+            if (para == null) continue;
+
+            String[] words = text.split("\\s+");
+
+            int startWordIndex = 0;
+            if (words.length > 0 && words[0].matches("\\d+(\\.\\d+)*")) {
+                startWordIndex = 1;
+            }
+
+            if (startWordIndex < words.length) {
+                String firstWord = words[startWordIndex];
+                if (firstWord.length() > 0) {
+                    char firstChar = firstWord.charAt(0);
+                    if (!Character.isUpperCase(firstChar)) {
+                        errors.add(getMessage("error.subsection.first.not.uppercase", uiLanguage, text));
+                    }
+
+                    boolean allUppercase = true;
+                    for (int i = startWordIndex; i < words.length; i++) {
+                        if (!words[i].equals(words[i].toUpperCase())) {
+                            allUppercase = false;
+                            break;
+                        }
+                    }
+                    if (allUppercase) {
+                        errors.add(getMessage("error.subsection.not.lowercase", uiLanguage, text));
+                    }
+                }
+            }
+
+            boolean isBold = false;
+            for (XWPFRun run : para.getRuns()) {
+                if (run.isBold()) {
+                    isBold = true;
+                    break;
+                }
+            }
+            if (!isBold) {
+                errors.add(getMessage("error.subsection.not.bold", uiLanguage, text));
+            }
+
+            if (para.getIndentationFirstLine() <= 0) {
+                errors.add(getMessage("error.subsection.not.indented", uiLanguage, text));
+            }
+
+            if (text.endsWith(".")) {
+                errors.add(getMessage("error.subsection.has.period", uiLanguage, text));
+            }
+        }
+
+        return errors;
+    }
+
+    /**
+     * Перевірка абзаців, які виглядають як заголовки, але не мають стилів Заголовок 1, Заголовок 2, Заголовок 3
+     * @param document Документ XWPFDocument для перевірки
+     * @param docLanguage Мова документа (UA/EN)
+     * @param uiLanguage Мова інтерфейсу для повідомлень (UA/EN)
+     * @param officeLocale Локаль Office (UA/EN/RU)
+     * @return Список знайдених помилок
+     */
+    public List<String> checkUnstyledHeadings(XWPFDocument document, String docLanguage, String uiLanguage, String officeLocale) {
+        List<String> errors = new ArrayList<>();
+        List<String> headingStyles = Arrays.asList(
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_1, officeLocale),
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_2, officeLocale),
+                typicalHeadingStyles.getHeadingStyle(TypicalHeadingStyles.StyleKey.HEADING_3, officeLocale)
+        );
 
         for (XWPFParagraph para : document.getParagraphs()) {
-            if (para.getStyle() != null &&
-                    (para.getStyle().equals(headingStyles.get(officeLocale).get(2)) ||
-                            para.getStyle().equals(headingStyles.get(officeLocale).get(3)))) {
-
-                String text = para.getText().trim();
-                String[] words = text.split("\\s+");
-
-                // Пропустити частину з нумерацією
-                int startWordIndex = 0;
-                if (words.length > 0 && words[0].matches("\\d+(\\.\\d+)*")) {
-                    startWordIndex = 1;
-                }
-
-                // Перевірка першої великої літери, решти малих
-                if (startWordIndex < words.length) {
-                    String firstWord = words[startWordIndex];
-                    if (firstWord.length() > 0) {
-                        char firstChar = firstWord.charAt(0);
-                        if (!Character.isUpperCase(firstChar)) {
-                            errors.add(getMessage("error.subsection.first.not.uppercase", uiLanguage, text));
-                        }
-
-                        // Перевірка, чи решта заголовка в усіх ВЕЛИКИХ літерах
-                        boolean allUppercase = true;
-                        for (int i = startWordIndex; i < words.length; i++) {
-                            if (!words[i].equals(words[i].toUpperCase())) {
-                                allUppercase = false;
-                                break;
-                            }
-                        }
-                        if (allUppercase) {
-                            errors.add(getMessage("error.subsection.not.lowercase", uiLanguage, text));
-                        }
-                    }
-                }
-
-                // Перевірка на напівжирний шрифт
-                boolean isBold = false;
-                for (XWPFRun run : para.getRuns()) {
-                    if (run.isBold()) {
-                        isBold = true;
-                        break;
-                    }
-                }
-                if (!isBold) {
-                    errors.add(getMessage("error.subsection.not.bold", uiLanguage, text));
-                }
-
-                // Перевірка на відступ
-                if (para.getIndentationFirstLine() <= 0) {
-                    errors.add(getMessage("error.subsection.not.indented", uiLanguage, text));
-                }
-
-                // Перевірка на крапку в кінці
-                if (text.endsWith(".")) {
-                    errors.add(getMessage("error.subsection.has.period", uiLanguage, text));
-                }
+            if (isUnstyledTypicalHeading(para, docLanguage, headingStyles) ||
+                    isUnstyledNumberedHeading(para, headingStyles)) {
+                errors.add(getMessage("error.unstyled.heading", uiLanguage, para.getText().trim()));
             }
         }
 
@@ -384,7 +494,7 @@ public class CheckHeadings {
         allErrors.addAll(checkHeadingOrder(document, uiLanguage, officeLocale));
         allErrors.addAll(checkChapterFormatting(document, uiLanguage, officeLocale));
         allErrors.addAll(checkSubsectionFormatting(document, uiLanguage, officeLocale));
-
+        //allErrors.addAll(checkUnstyledHeadings(document, docLanguage, uiLanguage, officeLocale));
         return allErrors;
     }
 }
