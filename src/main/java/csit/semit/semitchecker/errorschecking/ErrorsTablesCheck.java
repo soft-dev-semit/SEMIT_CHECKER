@@ -65,10 +65,10 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
 
                     // параграфи до та після таблиці
                     if (!paragraphBFName.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAf");
+                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
                     }
                     if (!nextParagraph.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAf");
+                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
                     }
 
                     // перевірка стилів всередині таблиці

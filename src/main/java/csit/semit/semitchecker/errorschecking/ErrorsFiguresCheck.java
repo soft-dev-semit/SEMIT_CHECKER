@@ -5,12 +5,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+
+// TODO - додати перевірку нумерації
 public class ErrorsFiguresCheck implements IErrorsCheckable {
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
@@ -23,7 +24,6 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
     // перевірка назви, пустих рядків навколо, стилів назви
     public ErrorsList checkFigures(XWPFDocument document, CheckParams checkParams, String typeErrors) {
         ResourceBundle bundleDoc = ResourceBundle.getBundle("resourcesbundles/errorstexts/figure", checkParams.getLocaleDoc());
-        ResourceBundle bundleWord = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
         ErrorsList errors = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
         List<IBodyElement> bodyElements = document.getBodyElements();
         List<XWPFPictureData> pictures = document.getAllPictures();
@@ -62,10 +62,10 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
 
                         // параграфи до та після рисунку
                         if (!paragraphAFName.getText().isEmpty()) {
-                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankAf");
+                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankAfFigure");
                         }
                         if (!prevParagraph.getText().isEmpty()) {
-                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankBf");
+                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankBfFigure");
                         }
 
                         // стиль абзацу з рисунком
