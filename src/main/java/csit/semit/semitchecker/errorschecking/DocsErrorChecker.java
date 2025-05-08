@@ -40,6 +40,7 @@ public class DocsErrorChecker {
         listCh.add(new ErrorsBoundariesCheck());
         listCh.add(new ErrorsPerelikiCheck());
         listCh.add(new ErrorsTablesCheck());
+        listCh.add(new ErrorsFiguresCheck());
         return listCh;
     }
 

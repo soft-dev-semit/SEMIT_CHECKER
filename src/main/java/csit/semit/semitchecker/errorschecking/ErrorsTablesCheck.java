@@ -8,10 +8,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ErrorsTablesCheck implements IErrorsCheckable{
+public class ErrorsTablesCheck implements IErrorsCheckable {
 
     //TODO Ксенія - перевірка оформлення таблиць
     //TODO - додати перевірку послідовності нумерації
+    //TODO - додати "Кінець таблиці _._"
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "table");
@@ -26,15 +27,10 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
         ResourceBundle bundleWord = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
         ErrorsList errors = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
         List<IBodyElement> bodyElements = document.getBodyElements();
-        List<XWPFParagraph> paragraphs = new ArrayList<>();
+        List<XWPFParagraph> paragraphs = bodyElements.stream()
+                .map(e -> e instanceof XWPFParagraph ? (XWPFParagraph) e : null)
+                .collect(Collectors.toList());
 
-        for (IBodyElement e : bodyElements) {
-            if (e instanceof XWPFParagraph) {
-                paragraphs.add((XWPFParagraph) e);
-            } else {
-                paragraphs.add(null);
-            }
-        }
 
         String maskTableName = bundleDoc.getString("maskTableName");
         String maskTableCont = bundleDoc.getString("maskTableCont");
@@ -50,7 +46,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
                     // назва таблиці
                     if (!prevParagraph.getText().matches(maskTableName)) {
                         if (prevParagraph.getText().matches(maskTableCont)) {
-                            if (!(bodyElements.get(i - 3) instanceof XWPFTable)) {
+                            if (!(bodyElements.get(i - 2) instanceof XWPFTable)) {
                                 errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
                             }
                         } else {
@@ -69,7 +65,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
 
                     // параграфи до та після таблиці
                     if (!paragraphBFName.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBf");
+                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAf");
                     }
                     if (!nextParagraph.getText().isEmpty()) {
                         errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAf");
@@ -117,7 +113,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable{
     private String getTablePlace(XWPFTable table, CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         if (tableNumber.equals("Not found")) {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
+            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("figureBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
         } else {
             return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tablePosition") + tableNumber;
         }
