@@ -39,7 +39,6 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
             for (int i = 0; i < bodyElements.size(); i++) {
                 if (bodyElements.get(i) instanceof XWPFTable table) {
                     XWPFParagraph prevParagraph = (XWPFParagraph) bodyElements.get(i - 1);
-                    XWPFParagraph paragraphBFName = (XWPFParagraph) bodyElements.get(i - 2);
                     XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1);
                     String tableNumber = "Not found";
 
@@ -52,6 +51,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                         } else {
                             errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoTableName");
                         }
+
                     } else { // перевіряти стилі тільки якщо були знайдені номери таблиць
                         Pattern pattern = Pattern.compile(maskTableName);
                         Matcher matcher = pattern.matcher(prevParagraph.getText());
@@ -63,13 +63,23 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                         }
                     }
 
-                    // параграфи до та після таблиці
-                    if (!paragraphBFName.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
+                    // параграф до таблиці
+                    if (!(bodyElements.get(i - 2) instanceof XWPFTable)) {
+                        XWPFParagraph paragraphBFName = (XWPFParagraph) bodyElements.get(i - 2);
+                        if (!paragraphBFName.getText().isEmpty()) {
+                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
+                        }
                     }
-                    if (!nextParagraph.getText().isEmpty()) {
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+
+                    if (i < (bodyElements.size() - 2)) {
+                        if (!(bodyElements.get(i + 2) instanceof XWPFTable)) {
+                            // параграф після таблиці
+                            if (!nextParagraph.getText().isEmpty()) {
+                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+                            }
+                        }
                     }
+
 
                     // перевірка стилів всередині таблиці
                     for (int rowN = 0; rowN < table.getRows().size(); rowN++) {
