@@ -113,7 +113,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
     private String getTablePlace(XWPFTable table, CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         if (tableNumber.equals("Not found")) {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("figureBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
+            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
         } else {
             return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tablePosition") + tableNumber;
         }
