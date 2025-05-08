@@ -50,7 +50,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                                 errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
                             }
                         } else {
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoName");
+                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoTableName");
                         }
                     } else { // перевіряти стилі тільки якщо були знайдені номери таблиць
                         Pattern pattern = Pattern.compile(maskTableName);
@@ -58,7 +58,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                         if (matcher.find()) {
                             tableNumber = matcher.group(1);
                             if (!"TableNumber".equals(prevParagraph.getStyle())) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNameStyle");
+                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorTableNameStyle");
                             }
                         }
                     }

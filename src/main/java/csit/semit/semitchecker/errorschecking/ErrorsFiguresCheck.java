@@ -48,14 +48,14 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
                         String figureNumber = "not found";
 
                         if (!nextParagraph.getText().matches(maskFigureName)) {
-                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoName");
+                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoFigureName");
                         } else { // перевіряти стилі тільки якщо були знайдені номери рисунків
                             Pattern pattern = Pattern.compile(maskFigureName);
                             Matcher matcher = pattern.matcher(nextParagraph.getText());
                             if (matcher.find()) {
                                 figureNumber = matcher.group(1);
                                 if (!"FigureNumber".equals(nextParagraph.getStyle())) {
-                                    errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNameStyle");
+                                    errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorFigureNameStyle");
                                 }
                             }
                         }
