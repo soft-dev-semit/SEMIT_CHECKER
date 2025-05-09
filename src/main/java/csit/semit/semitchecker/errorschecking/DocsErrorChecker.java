@@ -69,12 +69,12 @@ public class DocsErrorChecker {
         checksResults.add(elBoundaries);
         //list errors 2
         ErrorsList elPereliki = new ErrorsList(localeWord,localeDoc,"Pereliki");
-        elPereliki.addError("1.2 Маркірований перелік мі... : \"... єдиний пункт переліку.\"","PER001");
-        elPereliki.addError("1.4 Маркірований перелік, я... : \"... пункт помилкового переліку 1.\"","PER003");
-        elPereliki.addError("1.5 Маркірований перелік із... : \"... пункт помилкового переліку 1;\"","PER002");
-        elPereliki.addError("2.2 Нумерований перелік міс... : \"... єдиний пункт переліку.\"","PER001");
-        elPereliki.addError("2.4 Нумерований перелік, як... : \"... пункт помилкового переліку 1.\"","PER003");
-        elPereliki.addError("2.5 Нумерований перелік із ... : \"... пункт помилкового переліку 1;\"","PER002");
+        elPereliki.addError("1.2 Маркірований перелік мі... : \"... єдиний пункт переліку.\"", "pereliki.list.only_one_item");
+        elPereliki.addError("1.4 Маркірований перелік, я... : \"... пункт помилкового переліку 1.\"", "pereliki.items.nonormal_middle_item");
+        elPereliki.addError("1.5 Маркірований перелік із... : \"... пункт помилкового переліку 1;\"", "pereliki.items.last_item_nonormal");
+        elPereliki.addError("2.2 Нумерований перелік міс... : \"... єдиний пункт переліку.\"", "pereliki.list.only_one_item");
+        elPereliki.addError("2.4 Нумерований перелік, як... : \"... пункт помилкового переліку 1.\"", "pereliki.items.nonormal_middle_item");
+        elPereliki.addError("2.5 Нумерований перелік із ... : \"... пункт помилкового переліку 1;\"", "pereliki.items.last_item_nonormal");
         checksResults.add(elPereliki);
     }
 

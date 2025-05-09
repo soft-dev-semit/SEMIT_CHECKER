@@ -46,6 +46,7 @@ public class CalcDocStatistic {
         DocStatistic res = new DocStatistic();
         res.setFilename(docName);
         res.setDocLocale(docLocale);
+        res.setWordLocale(wordLocale);
         res.setCountPages(this.getCountPages());
         res.setCountFigures(this.getCountFigures());
         res.setCountTables(this.getCountTables());

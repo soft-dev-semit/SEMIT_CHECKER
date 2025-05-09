@@ -16,7 +16,8 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <h1 th:text="#{errorspage.welcome}">Перелік помилок</h1>
-
+        <h1 th:text="${docx_name}"></h1>
+        <br>
         <div th:each="checkResult : ${checksResults}" class="mb-4">
             <h4 class="mt-3" th:text="#{error.checktype} + ' ' + ${checkResult.errorsType}">Тип помилки</h4>
             <table class="table table-bordered table-sm">

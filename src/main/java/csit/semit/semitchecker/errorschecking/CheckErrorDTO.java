@@ -14,7 +14,9 @@ public class CheckErrorDTO {
 
     public CheckErrorDTO(CheckError checkError, String checkType, String localizedMessage) {
         this.errorPlace = checkError.getErrorPlace();
-        this.errorText = checkError.getErrorCodText() + ": " + localizedMessage;
+        //Видається повідомлення та його код
+//        this.errorText = checkError.getErrorCodText() + ": " + localizedMessage;
+        this.errorText = localizedMessage;
         this.checkType = checkType;
     }
 

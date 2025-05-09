@@ -66,6 +66,26 @@
             <td th:text="#{ref.filename}">Ім'я файлу</td>
             <td th:text="${statistic != null ? statistic.filename : ''}"></td>
         </tr>
+        <tr th:if="${statistic != null}"
+            th:with="localizedNameDoc=${#messages.msgOrNull('ref.' + statistic.docLocale.toString())}">
+            <td th:text="#{ref.docLocale}">Мова документу</td>
+            <td th:text="${localizedNameDoc != null ? localizedNameDoc : ''}"></td>
+            <td hidden id="docLocaleCode" th:text="${statistic.docLocale}"></td>
+        </tr>
+        <tr th:unless="${statistic != null}">
+            <td th:text="#{ref.docLocale}">Мова документу</td>
+            <td></td>
+        </tr>
+        <tr th:if="${statistic != null}"
+            th:with="localizedNameWord=${#messages.msgOrNull('ref.' + statistic.wordLocale.toString())}">
+            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>
+            <td th:text="${localizedNameWord != null ? localizedNameWord : ''}"></td>
+            <td hidden id="wordLocaleCode" th:text="${statistic.wordLocale}"></td>
+        </tr>
+        <tr th:unless="${statistic != null}">
+            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>
+            <td></td>
+        </tr>
         <tr>
             <td th:text="#{ref.num_pages}">Кількість сторінок</td>
             <td th:text="${statistic != null ? statistic.countPages : ''}"></td>
@@ -230,26 +250,29 @@
     document.addEventListener("DOMContentLoaded", function () {
         const checkForm = document.getElementById("checkForm");
         const fileForCheck = document.getElementById("statisticTable").rows[0].cells[1].innerHTML;
-        const localeDoc = document.getElementById("locale_doc");
-        const localeWord = document.getElementById("locale_word");
+        const docLocaleCell = document.getElementById("docLocaleCode");
+        const localeDocCode = docLocaleCell ? docLocaleCell.textContent.trim() : null;
+        const wordLocaleCell = document.getElementById("wordLocaleCode");
+        const localeWordCode = docLocaleCell ? wordLocaleCell.textContent.trim() : null;
 
         checkForm.addEventListener("submit", function (event) {
-            if (!fileForCheck || !localeDoc.value || !localeWord.value) {
+            if (!fileForCheck || !localeDocCode || !localeWordCode) {
                 let warningMessage = /*[[#{errorspage.alert.choose_all}]]*/ 'Please select all fields';
                 alert(warningMessage);
-                return;
+                event.preventDefault(); // ⬅️ Это блокирует переход
+                return false;
             }
 
             // Додаємо значення з першої форми у вигляді прихованих полів
             const hiddenLocaleDoc = document.createElement("input");
             hiddenLocaleDoc.type = "hidden";
             hiddenLocaleDoc.name = "localeDoc";
-            hiddenLocaleDoc.value = localeDoc.value;
+            hiddenLocaleDoc.value = localeDocCode.value;
 
             const hiddenLocaleWord = document.createElement("input");
             hiddenLocaleWord.type = "hidden";
             hiddenLocaleWord.name = "localeWord";
-            hiddenLocaleWord.value = localeWord.value;
+            hiddenLocaleWord.value = localeWordCode.value;
 
             const hiddenFilename = document.createElement("input");
             hiddenFilename.type = "hidden";

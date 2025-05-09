@@ -38,9 +38,11 @@ public class ErrorsShowController {
         Locale locale = Lang.valueOf(localeInterface).getLocale();
         request.getSession().setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, locale);
         //Яка мова інтерфейсу була встановлену у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
-        Locale wordLocale= MultiLang.valueOf(localeWord).getLocale();
+//        Locale wordLocale= MultiLang.valueOf(localeWord).getLocale();
+        Locale wordLocale = Locale.forLanguageTag(localeWord.replace("_", "-"));
         //На якій мові документ? Може бути тільки дві
-        Locale docLocale = Lang.valueOf(localeDoc).getLocale();
+//        Locale docLocale = Lang.valueOf(localeDoc).getLocale();
+        Locale docLocale = Locale.forLanguageTag(localeDoc.replace("_", "-"));
         //На якій мові показати помилки? Може бути тільки дві
         Locale interfaceLocale = Lang.valueOf(localeInterface).getLocale();
         //Створююється об'єкт із локалями для передачі в блок перевірки
@@ -76,7 +78,7 @@ public class ErrorsShowController {
             }
         }
         model.addAttribute("checksResults", errorsListsReadyToWeb);
-        model.addAttribute("docx name", docName);
+        model.addAttribute("docx_name", docName);
         return "ErrorsShowPage";
     }
 
