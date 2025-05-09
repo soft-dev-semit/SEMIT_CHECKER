@@ -17,14 +17,14 @@ import java.util.Set;
 public class DocStatisticCalcTest {
 
     // Имя ворд-файлу для тестування обробки
-    String docName = "DRB_test_ua_UA.docx";
-//    String docName = "DRB_test_ua_EN.docx";
+//    String docName = "DRB_test_ua_UA.docx";
+    String docName = "DRB_test_ua_EN.docx";
 //    String docName = "DRB_test_en_UA.docx";
 //    String docName = "Test-file-pereliki.uk.en.docx";
 //    String docName = "Test-file-pereliki.docx";
 
-    String docLocale = "UA";
-    String wordLocale = "UA";
+    String docLocale = "EN";
+    String wordLocale = "RU";
 
     @Test
     void showDocParagraphs() throws IOException {
@@ -87,6 +87,13 @@ public class DocStatisticCalcTest {
             usedStyles.forEach(style->System.out.println("ID: " + style.getStyleId() + " | Имя: " +
                     ((style != null) ? style.getName() : "Unknown")));
         }
+    }
+
+    @Test
+    void showLocals() throws IOException {
+        Path path = Paths.get(docName);
+        CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, docLocale, wordLocale);
+        System.out.println(calcDocStatistic.calcParam());
     }
 
 }

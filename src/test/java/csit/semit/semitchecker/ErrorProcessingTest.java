@@ -190,7 +190,7 @@ public class ErrorProcessingTest {
                         System.out.println(normalMsgText);
                     });
         } else {
-            System.out.println(errorMessageGetter.getMessage("NOERRORS", checkParams.getLocaleInterface()));
+            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
         }
 
         ErrorsList errNumericWithBracket = new ErrorsList(checkParams.localeDoc, checkParams.getLocaleWord(), typeErrors);
@@ -206,7 +206,7 @@ public class ErrorProcessingTest {
                         System.out.println(normalMsgText);
                     });
         } else {
-            System.out.println(errorMessageGetter.getMessage("NOERRORS", checkParams.getLocaleInterface()));
+            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
         }
     }
 
@@ -247,7 +247,7 @@ public class ErrorProcessingTest {
             errPerelikiDTO.transformErrorsList(errPereliki,true,errorMessageGetter, localeInterface);
             errPerelikiDTO.getErrorListReadyToShow().stream().forEach(System.out::println);
         } else {
-            System.out.println(errorMessageGetter.getMessage("NOERRORS", checkParams.getLocaleInterface()));
+            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
         }
 
 
@@ -283,7 +283,7 @@ public class ErrorProcessingTest {
                 }
             }
         } else {
-            System.out.println(errorMessageGetter.getMessage("NOERRORS", checkParams.getLocaleInterface()));
+            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
         }
 
     }
@@ -319,7 +319,7 @@ public class ErrorProcessingTest {
                 }
             }
         } else {
-            System.out.println(errorMessageGetter.getMessage("NOERRORS", checkParams.getLocaleInterface()));
+            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
         }
 
     }

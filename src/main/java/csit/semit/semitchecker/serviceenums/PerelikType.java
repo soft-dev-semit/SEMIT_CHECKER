@@ -2,7 +2,7 @@ package csit.semit.semitchecker.serviceenums;
 
 public enum PerelikType {
     ListMarkedSTD("[a-zа-яіїє\"]", ";", ":"),
-    ListNumeric1("[А-яA-Z}ІЇЄ\"]", ".", "."),
+    ListNumeric1("[А-яA-ZІЇЄ\"]", ".", "."),
     ListNumericA("[a-zа-яіїє\"]", ";", ":"),
     ListNumericWithBracket("[a-zа-яіїє\"]", ";", ":");
 
