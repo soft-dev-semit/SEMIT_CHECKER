@@ -11,8 +11,6 @@ import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
 import org.jodconverter.core.office.OfficeException;
 import org.jodconverter.local.LocalConverter;
 import org.jodconverter.local.office.LocalOfficeManager;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTLanguage;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSettings;
 
 
 import java.io.File;
@@ -56,25 +54,6 @@ public class CalcDocStatistic {
         res.prepareAbstractEN();
         return res;
     }
-
-
-    //ОТСТУПЫ СТРАНИЦЫ
-
-//    var sectPtr = document.getDocument().getBody().getSectPr();
-//        if (sectPtr == null) {
-//        errorsCollector.addError(ErrorTemplates.sectPtrNotFound());
-//        return;
-//    }
-//var margins = sectPtr.getPgMar();
-//        if (margins == null) {
-//        errorsCollector.addError(ErrorTemplates.marginsNotFound());
-//        return;
-//    }
-//
-//    BigInteger leftMargin = (BigInteger) margins.getLeft();
-//    BigInteger rightMargin = (BigInteger) margins.getRight();
-//    BigInteger topMargin = (BigInteger) margins.getTop();
-//    BigInteger bottomMargin = (BigInteger) margins.getBottom();
 
     public List<XWPFParagraph> getParagraphesDoc() {
         List<XWPFParagraph> paragraphs = document.getParagraphs();
@@ -219,10 +198,7 @@ public class CalcDocStatistic {
             //Количество источников равно кол-ву елементов
             //Но начальное значение -1, поэтому для нормального отображение нужно добавить 1
             count++;
-
-
         }
-
         count = count==-1? 0 : count;
         return count;
     }
@@ -276,23 +252,23 @@ public class CalcDocStatistic {
         return usedStyles;
     }
 
-    /**
-     * Спроба автоматичного визначення мови документа Word (.docx)
-     *
-     * @return локаль, або null, якщо не вдалося визначити
-     */
-    public Locale detectLocale() {
-        // Отримуємо settings через API Apache POI
-        CTSettings settings = document.getSettings().getCTSettings();
-
-        if (settings != null && settings.isSetThemeFontLang()) {
-            CTLanguage lang = settings.getThemeFontLang();
-            String langCode = lang.getVal(); // Наприклад, "uk-UA"
-            return parseLanguageCode(langCode);
-        }
-
-        return null;
-    }
+//    /**
+//     * Спроба автоматичного визначення мови документа Word (.docx)
+//     *
+//     * @return локаль, або null, якщо не вдалося визначити
+//     */
+//    public Locale detectLocale() {
+//        // Отримуємо settings через API Apache POI
+//        CTSettings settings = document.getSettings().getCTSettings();
+//
+//        if (settings != null && settings.isSetThemeFontLang()) {
+//            CTLanguage lang = settings.getThemeFontLang();
+//            String langCode = lang.getVal(); // Наприклад, "uk-UA"
+//            return parseLanguageCode(langCode);
+//        }
+//
+//        return null;
+//    }
 
     public Locale parseLanguageCode(String langCode) {
         //getVal() може повернути значення типу uk-UA, en-US, ru-RU, тож враховуй це у parseLanguageCode.
