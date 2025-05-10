@@ -245,21 +245,21 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         //Перевірка рядків після абзацу
         XWPFParagraph parAfter = perelik.getParagraphAfter();
         XWPFParagraph parAfter2 = perelik.getParagraphAfter();
-        //Після абзацу та продовженням пункту немає бути вільного рядка
+        //Після переліку та продовженням пункту немає бути вільного рядка
+        //pereliki.list.empty_line_after: після переліку немає бути вільного рядка
         if (parAfter.getText().isBlank() && parAfter2.getStyle()==null) {
             perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.list.empty_line_after");
         }
         //Після абзацу та заголовком БАЖАНО мати деякий текст
+        //pereliki.list.empty_line_before_header: WARNING: після переліку перед заголовком бажано представити фразу-підсумок
         if (parAfter.getText().isBlank() && isHeader(parAfter2,checkParams.localeWord)) {
             perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.list.empty_line_before_header");
         }
-
 
         //pereliki.list.onlyonyitem: перелік містить тільки один пункт
         if (listParagraphs.size() == 1) {
             perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.list.only_one_item");
         }
-
 
         //pereliki.items.lastitemnonormal: останній пункт переліку закінчується не ‘.’
         //TODO В багаторівневих переліках останній символ може бути не "."!
