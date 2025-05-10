@@ -29,6 +29,21 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         return errPereliki;
     }
 
+    //Метод виявлення "підозрілих" переліків
+    public ErrorsList checkBadPereliks(XWPFDocument xwpfDocument, @NotNull CheckParams checkParams, String typeErrors) {
+        ErrorsList errorsList = new ErrorsList(checkParams.localeWord,checkParams.localeDoc,typeErrors);
+        List<XWPFParagraph> xwpfParagraphs = xwpfDocument.getParagraphs();
+        //"Правильне" форматування переліків задається 5 стилями
+        //Але деякі студенти форматують або стандартними переліками, або вручну.
+        //Списки, створені "неправильним" чином, не будуть аналізуватися при перевірці.
+        //Тому варто застосувати правильне форматування, що забезпечить аналіз інших фрагментів.
+        for (XWPFParagraph paragraph: xwpfParagraphs) {
+
+        }
+        return errorsList;
+    }
+
+
     //Метод перевірки переліків
     public ErrorsList checkPereliksOfType(XWPFDocument xwpfDocument, CheckParams checkParams,
                                           ErrorsList errorsList, String typeErrors, PerelikType pt) {
@@ -211,7 +226,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
                     // неправильний символ у попередньому реченні: '.' треба замінити на ':' (або навпаки для ListNumeric1)
                     if (!parBefore.getText().endsWith(perelikWithErrors.perelikType.getPrevSentSymbol())) {
                         perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(),
-                                "pereliki.list.nonormal_prev_sentence_last_symbol");
+                                "pereliki.list_last_symbol");
                     }
                 } else {
                     //Якщо заголовок, то треба додати якесь речення-пояснення
@@ -221,18 +236,23 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
                     } else {
                         //якщо не заголовок, то це якесь незрозуміле форматування, - рекомендується перевірити
                         perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(),
-                                "pereliki.list.nonormal_prev_sentence");
+                                "pereliki.list.nonormal_prev_sentence_last_symbol");
                     }
                 }
             }
         }
 
-        //TODO виявити "типу списки" - звичайні абзаци, в яких на початку йдуть послідовності символів, які починають списки
-
-
-        //TODO Аналіз абзаців після тексту
+        //Перевірка рядків після абзацу
         XWPFParagraph parAfter = perelik.getParagraphAfter();
         XWPFParagraph parAfter2 = perelik.getParagraphAfter();
+        //Після абзацу та продовженням пункту немає бути вільного рядка
+        if (parAfter.getText().isBlank() && parAfter2.getStyle()==null) {
+            perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.list.empty_line_after");
+        }
+        //Після абзацу та заголовком БАЖАНО мати деякий текст
+        if (parAfter.getText().isBlank() && isHeader(parAfter2,checkParams.localeWord)) {
+            perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.list.empty_line_before_header");
+        }
 
 
         //pereliki.list.onlyonyitem: перелік містить тільки один пункт

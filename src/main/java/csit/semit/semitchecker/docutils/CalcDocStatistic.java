@@ -276,23 +276,23 @@ public class CalcDocStatistic {
         return usedStyles;
     }
 
-    /**
-     * Спроба автоматичного визначення мови документа Word (.docx)
-     *
-     * @return локаль, або null, якщо не вдалося визначити
-     */
-    public Locale detectLocale() {
-        // Отримуємо settings через API Apache POI
-        CTSettings settings = document.getSettings().getCTSettings();
-
-        if (settings != null && settings.isSetThemeFontLang()) {
-            CTLanguage lang = settings.getThemeFontLang();
-            String langCode = lang.getVal(); // Наприклад, "uk-UA"
-            return parseLanguageCode(langCode);
-        }
-
-        return null;
-    }
+//    /**
+//     * Спроба автоматичного визначення мови документа Word (.docx)
+//     *
+//     * @return локаль, або null, якщо не вдалося визначити
+//     */
+//    public Locale detectLocale() {
+//        // Отримуємо settings через API Apache POI
+//        CTSettings settings = document.getSettings().getCTSettings();
+//
+//        if (settings != null && settings.isSetThemeFontLang()) {
+//            CTLanguage lang = settings.getThemeFontLang();
+//            String langCode = lang.getVal(); // Наприклад, "uk-UA"
+//            return parseLanguageCode(langCode);
+//        }
+//
+//        return null;
+//    }
 
     public Locale parseLanguageCode(String langCode) {
         //getVal() може повернути значення типу uk-UA, en-US, ru-RU, тож враховуй це у parseLanguageCode.
