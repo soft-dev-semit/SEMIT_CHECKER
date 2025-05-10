@@ -226,7 +226,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
                     // неправильний символ у попередньому реченні: '.' треба замінити на ':' (або навпаки для ListNumeric1)
                     if (!parBefore.getText().endsWith(perelikWithErrors.perelikType.getPrevSentSymbol())) {
                         perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(),
-                                "pereliki.list_last_symbol");
+                                "pereliki.list.nonormal_prev_sentence_last_symbol");
                     }
                 } else {
                     //Якщо заголовок, то треба додати якесь речення-пояснення

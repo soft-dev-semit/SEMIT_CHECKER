@@ -29,7 +29,6 @@ String docName = "КР_МногоПомилок_en_UA.docx";
     String wordLocale = "EN";
     String docLocale = "UA";
 
-
     @Test
     void showDocParagraphs() throws IOException {
 
