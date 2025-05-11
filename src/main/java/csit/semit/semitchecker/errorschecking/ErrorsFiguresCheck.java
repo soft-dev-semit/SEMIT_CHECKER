@@ -97,15 +97,15 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
                 }
             }
 
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("figureBeginning")
+            return findHeader(paragraphs, position, params) + bundle.getString("figureBeginning")
                     + pos +  "\"";
         } else {
             return bundle.getString("figurePosition") + figureNumber;
         }
     }
 
-    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, Locale locale) {
-        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", locale);
+    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, CheckParams checkParams) {
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
         String noHeader = bundle.getString("noheader");
         Set<String> headers = Set.of(
                 bundle.getString("H1"),
@@ -120,12 +120,12 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
             if (style != null && headers.contains(style)) {
                 int endIdx = p.getText().length();
                 String app = ResourceBundle
-                        .getBundle("resourcesbundles.docskeywords.docskeywords", locale)
-                        .getString("appendix");
-                if (p.getText().contains(app)) {
+                        .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                        .getString("dodatok");
+                if (p.getText().toLowerCase().contains(app.toLowerCase())) {
                     endIdx = app.length() + 2;
                 } else {
-                    endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 2;
+                    endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
                 }
                 return p.getText().substring(0, endIdx) + "... ";
             }

@@ -126,7 +126,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
     private String getTablePlace(XWPFTable table, CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         if (tableNumber.equals("Not found")) {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
+            return findHeader(paragraphs, position, params) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
         } else {
             return bundle.getString("tablePosition") + tableNumber;
         }
@@ -157,8 +157,8 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                     .collect(Collectors.toList());
     }
 
-    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, Locale locale) {
-        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", locale);
+    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, CheckParams checkParams) {
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
         String noHeader = bundle.getString("noheader");
         Set<String> headers = Set.of(
                 bundle.getString("H1"),
@@ -173,9 +173,9 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
             if (style != null && headers.contains(style)) {
                 int endIdx = p.getText().length();
                 String app = ResourceBundle
-                        .getBundle("resourcesbundles.docskeywords.docskeywords", locale)
-                        .getString("appendix");
-                if (p.getText().contains(app)) {
+                        .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                        .getString("dodatok");
+                if (p.getText().toLowerCase().contains(app.toLowerCase())){
                     endIdx = app.length() + 2;
                 } else {
                     endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
