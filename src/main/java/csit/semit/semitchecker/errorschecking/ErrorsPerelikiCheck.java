@@ -304,16 +304,20 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         if (p == null) {
             return false;
         } else {
-            //Готуються дані про стилі в залежності від призначеної локації
-            //Загрузити локацію та назви стилів заголовків
-            ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", localWord);
-            String h1 = bundle.getString("H1");
-            String h2 = bundle.getString("H2");
-            String h3 = bundle.getString("H3");
-            String h4 = bundle.getString("H4");
-            if (p.getStyle().equals(h4) || p.getStyle().equals(h3)
-                    || p.getStyle().equals(h2) || p.getStyle().equals(h1)) {
-                return true;
+            if (p.getStyle()!=null) {
+                //Готуються дані про стилі в залежності від призначеної локації
+                //Загрузити локацію та назви стилів заголовків
+                ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", localWord);
+                String h1 = bundle.getString("H1");
+                String h2 = bundle.getString("H2");
+                String h3 = bundle.getString("H3");
+                String h4 = bundle.getString("H4");
+                if (p.getStyle().equals(h4) || p.getStyle().equals(h3)
+                        || p.getStyle().equals(h2) || p.getStyle().equals(h1)) {
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
                 return false;
             }

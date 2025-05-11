@@ -17,7 +17,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "table");
         errors.addErrorList(checkTables(xwpfDocument, checkParams, typeErrors));
-        System.out.println("CHECKED! ----- " + typeErrors);
+//        System.out.println("CHECKED! ----- " + typeErrors);
         return errors;
     }
 
