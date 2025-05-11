@@ -15,8 +15,28 @@
 <body id="checkerrorsbody">
 <div class="card shadow-sm">
     <div class="card-body">
-        <h1 th:text="#{errorspage.welcome}">Перелік помилок</h1>
-
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 th:text="#{errorspage.welcome}">Перелік помилок</h1>
+<!--            //Статистика, щоб повернутися на головну та її відобразити-->
+            <form th:action="@{/{localeInterface}/mainpage (localeInterface=${localeInterface})}"
+                  method="POST">
+                <input type="hidden" name="fileForCheck" th:value="${statistic.filename}"/>
+                <input type="hidden" name="localeWord" th:value="${statistic.wordLocale}"/>
+                <input type="hidden" name="localeDoc" th:value="${statistic.docLocale}"/>
+                <input type="hidden" name="countPages" th:value="${statistic.countPages}"/>
+                <input type="hidden" name="countFigures" th:value="${statistic.countFigures}"/>
+                <input type="hidden" name="countTables" th:value="${statistic.countTables}"/>
+                <input type="hidden" name="countSources" th:value="${statistic.countSources}"/>
+                <input type="hidden" name="countAppendixes" th:value="${statistic.countAppendixes}"/>
+                <input type="hidden" name="abstractUA" th:value="${statistic.abstractUARow}"/>
+                <input type="hidden" name="abstractEN" th:value="${statistic.abstractENRow}"/>
+                <button class="btn btn-outline-secondary">
+                    <span th:text="#{errorspage.button.back}">Повернутися</span>
+                </button>
+            </form>
+        </div>
+        <h1 th:text="${statistic.filename}"></h1>
+        <br>
         <div th:each="checkResult : ${checksResults}" class="mb-4">
             <h4 class="mt-3" th:text="#{error.checktype} + ' ' + ${checkResult.errorsType}">Тип помилки</h4>
             <table class="table table-bordered table-sm">

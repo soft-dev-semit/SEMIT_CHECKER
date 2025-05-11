@@ -12,10 +12,10 @@ import java.util.Locale;
 public class DocStatistic {
     //імя файлу
     private String filename;
-    //мова тексту
-    private Locale docLocale;
     //мова Ворд
     private Locale wordLocale;
+    //мова тексту
+    private Locale docLocale;
     //Границі
     private double leftMargin;
     private double rightMargin;

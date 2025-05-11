@@ -42,16 +42,31 @@
         </dependency>
 
         <!-- For working with DOC -->
+        <!-- Залежність для Apache POI (бібліотеки для роботи з DOCX) -->
         <dependency>
             <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>5.3.0</version>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.3.0</version>
+            <version>5.2.3</version>
         </dependency>
+        <!-- Залежність для POI, що містить схеми XML -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml-schemas</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+
+        <!-- Залежність для Apache XMLBeans (необхідна для роботи з POI XML об'єктами) -->
+        <dependency>
+            <groupId>org.apache.xmlbeans</groupId>
+            <artifactId>xmlbeans</artifactId>
+            <version>5.1.1</version>
+        </dependency>
+
         <!-- For working with pdf для посчета количества страниц -->
         <dependency>
             <groupId>org.jodconverter</groupId>
