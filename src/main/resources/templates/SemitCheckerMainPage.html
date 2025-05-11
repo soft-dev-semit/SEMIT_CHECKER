@@ -14,13 +14,18 @@
 <!-- File Upload Form -->
 <div class="card shadow-sm">
     <div class="card-body">
-        <h1 th:text="#{page.welcome}"></h1>
-        <form
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 th:text="#{page.welcome}">Перелік помилок</h1>
+            <a th:href="@{/}" class="btn btn-outline-secondary">
+                <span th:text="#{page.button.change_lang}">Change language </span>
+            </a>
+        </div>
+        <form id="loadfileform"
                 action="#"
-                th:action="@{/{localInterface}/choose-file(localInterface=${localInterface})}"
+                th:action="@{/{localeInterface}/choose-file(localeInterface=${localeInterface})}"
                 method="post"
                 enctype="multipart/form-data"
-                th:hx-post="@{/{localInterface}/choose-file(localInterface=${localInterface})}"
+                th:hx-post="@{/{localeInterface}/choose-file(localeInterface=${localeInterface})}"
                 hx-trigger="submit"
                 hx-target="#file-list">
             <!--                    hx-swap="outerHTML">-->
@@ -34,12 +39,6 @@
                        name="file"
                        accept=".docx"
                        required>
-                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
-                    документу?</label>
-                <select name="localeDoc" class="form-select" id="locale_doc">
-                    <option value="UA" th:text="#{lang.ua}">Українська</option>
-                    <option value="EN" th:text="#{lang.en}">Англійська</option>
-                </select>
                 <label for="locale_word" class="form-label" th:text="#{page.choose_locale_word}">Яка мова інтерфейсу
                     Word була встановлена при збереженні файлу?</label>
                 <select name="localeWord" class="form-select" id="locale_word">
@@ -47,15 +46,19 @@
                     <option value="EN" th:text="#{lang.en}">Англійська</option>
                     <option value="RU" th:text="#{lang.ru}">Харківська</option>
                 </select>
+                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
+                    документу?</label>
+                <select name="localeDoc" class="form-select" id="locale_doc">
+                    <option value="UA" th:text="#{lang.ua}">Українська</option>
+                    <option value="EN" th:text="#{lang.en}">Англійська</option>
+                </select>
+
             </div>
             <button type="submit" class="btn btn-primary w-100" th:text="#{page.upload.name}">Завантажити</button>
         </form>
 
     </div>
 </div>
-
-<hr class="my-4">
-
 <div class="mt-2" th:if="statistic != null ">
     <div class="invalid-feedback">
         Будь-ласка, оберіть файл DOCX !
@@ -66,26 +69,36 @@
             <td th:text="#{ref.filename}">Ім'я файлу</td>
             <td th:text="${statistic != null ? statistic.filename : ''}"></td>
         </tr>
-        <tr th:if="${statistic != null}"
-            th:with="localizedNameDoc=${#messages.msgOrNull('ref.' + statistic.docLocale.toString())}">
-            <td th:text="#{ref.docLocale}">Мова документу</td>
-            <td th:text="${localizedNameDoc != null ? localizedNameDoc : ''}"></td>
-            <td hidden id="docLocaleCode" th:text="${statistic.docLocale}"></td>
-        </tr>
-        <tr th:unless="${statistic != null}">
-            <td th:text="#{ref.docLocale}">Мова документу</td>
-            <td></td>
-        </tr>
-        <tr th:if="${statistic != null}"
-            th:with="localizedNameWord=${#messages.msgOrNull('ref.' + statistic.wordLocale.toString())}">
+<!--        //Версія, коли дані для вибору локалі є саме позначенням локали-->
+        <tr>
             <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>
-            <td th:text="${localizedNameWord != null ? localizedNameWord : ''}"></td>
-            <td hidden id="wordLocaleCode" th:text="${statistic.wordLocale}"></td>
+            <td th:text="${statistic != null ? statistic.wordLocale : ''}"></td>
         </tr>
-        <tr th:unless="${statistic != null}">
-            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>
-            <td></td>
+        <tr>
+            <td th:text="#{ref.docLocale}">Мова документу</td>
+            <td th:text="${statistic != null ? statistic.docLocale : ''}"></td>
         </tr>
+<!--        //Версія, коли дані для перевірки беруться з комбобоксів для вибору локалі-->
+<!--        <tr th:if="${statistic != null}"-->
+<!--            th:with="localizedNameDoc=${#messages.msgOrNull('ref.' + statistic.docLocale.toString())}">-->
+<!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
+<!--            <td th:text="${localizedNameDoc != null ? localizedNameDoc : ''}"></td>-->
+<!--            <td hidden id="docLocaleCode" th:text="${statistic.docLocale}"></td>-->
+<!--        </tr>-->
+<!--        <tr th:unless="${statistic != null}">-->
+<!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
+<!--            <td></td>-->
+<!--        </tr>-->
+<!--        <tr th:if="${statistic != null}"-->
+<!--            th:with="localizedNameWord=${#messages.msgOrNull('ref.' + statistic.wordLocale.toString())}">-->
+<!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
+<!--            <td th:text="${localizedNameWord != null ? localizedNameWord : ''}"></td>-->
+<!--            <td hidden id="wordLocaleCode" th:text="${statistic.wordLocale}"></td>-->
+<!--        </tr>-->
+<!--        <tr th:unless="${statistic != null}">-->
+<!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
+<!--            <td></td>-->
+<!--        </tr>-->
         <tr>
             <td th:text="#{ref.num_pages}">Кількість сторінок</td>
             <td th:text="${statistic != null ? statistic.countPages : ''}"></td>
@@ -116,24 +129,10 @@
         </tr>
     </table>
 </div>
-
-<hr class="my-4">
-<!--<h2 class="text-center mb-3">Found errors:</h2>-->
-
-<!--&lt;!&ndash; Spinner (Bootstrap spinner) &ndash;&gt;-->
-<!--<div id="spinner" class="spinner-container center" hidden>-->
-<!--    <div class="spinner-border text-primary" role="status">-->
-<!--        <span class="visually-hidden">Loading...</span>-->
-<!--    </div>-->
-<!--</div>-->
-
-<!--<div id="file-list-div">-->
-<!--    <th:block id="file-list" th:replace="~{templates :: errors-list}"></th:block>-->
-<!--</div>-->
 <div class="mt-2" th:if="statistic != null ">
     <h2 th:text="#{page.checking}"></h2>
     <form id="checkForm"
-          th:action="@{/{localInterface}/check (localInterface=${localInterface})}"
+          th:action="@{/{localeInterface}/check (localeInterface=${localeInterface})}"
           method="POST">
         <input type="submit" class="btn btn-primary w-100" th:value="#{check.start}"/>
     </form>
@@ -250,10 +249,21 @@
     document.addEventListener("DOMContentLoaded", function () {
         const checkForm = document.getElementById("checkForm");
         const fileForCheck = document.getElementById("statisticTable").rows[0].cells[1].innerHTML;
-        const docLocaleCell = document.getElementById("docLocaleCode");
-        const localeDocCode = docLocaleCell ? docLocaleCell.textContent.trim() : null;
-        const wordLocaleCell = document.getElementById("wordLocaleCode");
-        const localeWordCode = docLocaleCell ? wordLocaleCell.textContent.trim() : null;
+        const localeWordCode = document.getElementById("statisticTable").rows[1].cells[1].innerHTML;
+        const localeDocCode = document.getElementById("statisticTable").rows[2].cells[1].innerHTML;
+        const countPages = document.getElementById("statisticTable").rows[3].cells[1].innerHTML;
+        const countFigures = document.getElementById("statisticTable").rows[4].cells[1].innerHTML;
+        const countTables = document.getElementById("statisticTable").rows[5].cells[1].innerHTML;
+        const countSources = document.getElementById("statisticTable").rows[6].cells[1].innerHTML;
+        const countAppendixes = document.getElementById("statisticTable").rows[7].cells[1].innerHTML;
+        const abstractUARow = document.getElementById("statisticTable").rows[8].cells[1].innerHTML;
+        const abstractENRow = document.getElementById("statisticTable").rows[9].cells[1].innerHTML;
+
+        //Дані про локаль Ворда та локаль файлу зчитуються з комбобоксів
+        // const docLocaleCell = document.getElementById("docLocaleCode");
+        // const localeDocCode = docLocaleCell ? docLocaleCell.textContent.trim() : null;
+        // const wordLocaleCell = document.getElementById("wordLocaleCode");
+        // const localeWordCode = docLocaleCell ? wordLocaleCell.textContent.trim() : null;
 
         checkForm.addEventListener("submit", function (event) {
             if (!fileForCheck || !localeDocCode || !localeWordCode) {
@@ -264,26 +274,87 @@
             }
 
             // Додаємо значення з першої форми у вигляді прихованих полів
-            const hiddenLocaleDoc = document.createElement("input");
-            hiddenLocaleDoc.type = "hidden";
-            hiddenLocaleDoc.name = "localeDoc";
-            hiddenLocaleDoc.value = localeDocCode.value;
-
-            const hiddenLocaleWord = document.createElement("input");
-            hiddenLocaleWord.type = "hidden";
-            hiddenLocaleWord.name = "localeWord";
-            hiddenLocaleWord.value = localeWordCode.value;
-
             const hiddenFilename = document.createElement("input");
             hiddenFilename.type = "hidden";
             hiddenFilename.name = "fileForCheck";
             hiddenFilename.value = fileForCheck;
 
+            const hiddenLocaleWord = document.createElement("input");
+            hiddenLocaleWord.type = "hidden";
+            hiddenLocaleWord.name = "localeWord";
+            hiddenLocaleWord.value = localeWordCode;
+            // hiddenLocaleWord.value = localeWordCode.value;
+
+            const hiddenLocaleDoc = document.createElement("input");
+            hiddenLocaleDoc.type = "hidden";
+            hiddenLocaleDoc.name = "localeDoc";
+            hiddenLocaleDoc.value = localeDocCode;
+            // hiddenLocaleDoc.value = localeDocCode.value;
+
+            const hiddenCountPages = document.createElement("input");
+            hiddenCountPages.type = "hidden";
+            hiddenCountPages.name = "countPages";
+            hiddenCountPages.value = countPages;
+
+            const hiddenCountFigures = document.createElement("input");
+            hiddenCountFigures.type = "hidden";
+            hiddenCountFigures.name = "countFigures";
+            hiddenCountFigures.value = countFigures;
+
+            const hiddenCountTables = document.createElement("input");
+            hiddenCountTables.type = "hidden";
+            hiddenCountTables.name = "countTables";
+            hiddenCountTables.value = countTables;
+
+            const hiddenCountSources = document.createElement("input");
+            hiddenCountSources.type = "hidden";
+            hiddenCountSources.name = "countSources";
+            hiddenCountSources.value = countSources;
+
+            const hiddenCountAppendixes = document.createElement("input");
+            hiddenCountAppendixes.type = "hidden";
+            hiddenCountAppendixes.name = "countAppendixes";
+            hiddenCountAppendixes.value = countAppendixes;
+
+            const hiddenAbstractUARow = document.createElement("input");
+            hiddenAbstractUARow.type = "hidden";
+            hiddenAbstractUARow.name = "abstractUA";
+            hiddenAbstractUARow.value = abstractUARow;
+
+            const hiddenAbstractENRow = document.createElement("input");
+            hiddenAbstractENRow.type = "hidden";
+            hiddenAbstractENRow.name = "abstractEN";
+            hiddenAbstractENRow.value = abstractENRow;
+
+            checkForm.appendChild(hiddenFilename);
             checkForm.appendChild(hiddenLocaleDoc);
             checkForm.appendChild(hiddenLocaleWord);
-            checkForm.appendChild(hiddenFilename);
+            checkForm.appendChild(hiddenCountPages);
+            checkForm.appendChild(hiddenCountFigures);
+            checkForm.appendChild(hiddenCountTables);
+            checkForm.appendChild(hiddenCountSources);
+            checkForm.appendChild(hiddenCountAppendixes);
+            checkForm.appendChild(hiddenAbstractUARow);
+            checkForm.appendChild(hiddenAbstractENRow);
+        });
+
+        //Скидання значень у таблиці при виборі нового файлу
+        document.getElementById("file").addEventListener("change", function () {
+            clearSecondCells("statisticTable");
         });
     });
+
+    function clearSecondCells(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const cells = table.rows[i].cells;
+            if (cells.length > 1) {
+                cells[1].textContent = '';
+            }
+        }
+    }
 </script>
 </body>
 

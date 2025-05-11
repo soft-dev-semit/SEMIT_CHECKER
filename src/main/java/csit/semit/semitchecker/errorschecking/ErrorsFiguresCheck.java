@@ -17,7 +17,7 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "figure");
         errors.addErrorList(checkFigures(xwpfDocument, checkParams, typeErrors));
-        System.out.println("CHECKED! ----- " + typeErrors);
+//        System.out.println("CHECKED! ----- " + typeErrors);
         return errors;
     }
 
