@@ -13,13 +13,14 @@ import java.nio.file.Paths;
 import java.util.Locale;
 
 public class FigureCheckTest {
-    String docNameEn = "Figures_test_ua_en.docx";
-    String docNameUa = "Figures_test_ua_ua.docx";
+    String docNameUaEn = "tables_figures_test_ua_en.docx";
+    String docNameUaUa = "tables_figures_test_ua_ua.docx";
+    String docNameEnEn = "tables_figures_test_en_en.docx";
+    String docNameEnUa = "tables_figures_test_en_ua.docx";
 
-    @Test
     void showFigures() throws IOException {
         System.out.println("---------- Checking table cell styles output in ukrainian ----------");
-        Path path = Paths.get(docNameUa);
+        Path path = Paths.get(docNameUaUa);
         XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("uk"));
@@ -39,9 +40,9 @@ public class FigureCheckTest {
     }
 
     @Test
-    void testCheckTableNamesEn() throws IOException {
-        System.out.println("---------- Checking figure names in english ----------");
-        Path path = Paths.get(docNameEn);
+    void testCheckFigureNamesUaEn() throws IOException {
+        System.out.println("---------- Checking figure names doc:en, word:ua ----------");
+        Path path = Paths.get(docNameUaEn);
         XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("en"));
@@ -50,16 +51,42 @@ public class FigureCheckTest {
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
         }
+    }@Test
+    void testCheckFigureNamesEnEn() throws IOException {
+        System.out.println("---------- Checking figure names doc:en, word:en ----------");
+        Path path = Paths.get(docNameEnEn);
+        XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
+        CheckParams params = new CheckParams();
+        params.setLocaleDoc(Locale.forLanguageTag("en"));
+        params.setLocaleWord(Locale.forLanguageTag("en"));
+        ErrorsList errors = new ErrorsFiguresCheck().check(document, params, "figure");
+        for (CheckError error : errors.getErrors()) {
+            System.out.println(error);
+        }
     }
 
     @Test
-    void testCheckTableNamesUa() throws IOException {
-        System.out.println("---------- Checking figure names in ukrainian ----------");
-        Path path = Paths.get(docNameUa);
+    void testCheckFigureNamesUaUa() throws IOException {
+        System.out.println("---------- Checking figure names in doc:ua, word:ua ----------");
+        Path path = Paths.get(docNameUaUa);
         XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("uk"));
         params.setLocaleWord(Locale.forLanguageTag("uk"));
+        ErrorsList errors = new ErrorsFiguresCheck().check(document, params, "figure");
+        for (CheckError error : errors.getErrors()) {
+            System.out.println(error);
+        }
+    }
+
+    @Test
+    void testCheckFigureNamesEnUa() throws IOException {
+        System.out.println("---------- Checking figure names in doc:ua, word:en ----------");
+        Path path = Paths.get(docNameEnUa);
+        XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
+        CheckParams params = new CheckParams();
+        params.setLocaleDoc(Locale.forLanguageTag("uk"));
+        params.setLocaleWord(Locale.forLanguageTag("en"));
         ErrorsList errors = new ErrorsFiguresCheck().check(document, params, "figure");
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
