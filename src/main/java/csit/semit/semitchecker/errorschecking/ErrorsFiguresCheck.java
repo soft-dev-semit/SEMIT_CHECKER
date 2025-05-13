@@ -2,6 +2,7 @@ package csit.semit.semitchecker.errorschecking;
 
 import org.apache.poi.xwpf.usermodel.*;
 import org.jetbrains.annotations.NotNull;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDrawing;
 
 import java.util.List;
 import java.util.ResourceBundle;
@@ -27,7 +28,13 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
         ResourceBundle bundleDoc = ResourceBundle.getBundle("resourcesbundles/errorstexts/figure", checkParams.getLocaleDoc());
         ErrorsList errors = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
         List<IBodyElement> bodyElements = document.getBodyElements();
-        List<XWPFPictureData> pictures = document.getAllPictures();
+        List<CTDrawing> pictures = document.getBodyElements().stream()
+                .filter(e -> e instanceof XWPFParagraph)
+                .map(e -> (XWPFParagraph) e)
+                .flatMap(p -> p.getRuns().stream()
+                        .flatMap(r -> r.getCTR().getDrawingList().stream()))
+                .toList();
+
         List<XWPFParagraph> paragraphs = bodyElements.stream()
                 .map(e -> e instanceof XWPFParagraph ? (XWPFParagraph) e : null)
                 .collect(Collectors.toList());

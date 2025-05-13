@@ -13,8 +13,8 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
     //TODO Ксенія - перевірка оформлення таблиць
     //TODO К - додати перевірку послідовності нумерації
     //TODO К - додати перевірку наявності посилань
+    // Подумати про вивід повідомлень для продовження та кінця таблиці
 
-    // перевірка стилів окремо для кожного, бо кінець і продовження мають інший стиль від назви таблиці
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "table");
