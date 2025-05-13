@@ -39,6 +39,12 @@
                        name="file"
                        accept=".docx"
                        required>
+                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
+                    документу?</label>
+                <select name="localeDoc" class="form-select" id="locale_doc">
+                    <option value="UA" th:text="#{lang.ua}">Українська</option>
+                    <option value="EN" th:text="#{lang.en}">Англійська</option>
+                </select>
                 <label for="locale_word" class="form-label" th:text="#{page.choose_locale_word}">Яка мова інтерфейсу
                     Word була встановлена при збереженні файлу?</label>
                 <select name="localeWord" class="form-select" id="locale_word">
@@ -46,19 +52,15 @@
                     <option value="EN" th:text="#{lang.en}">Англійська</option>
                     <option value="RU" th:text="#{lang.ru}">Харківська</option>
                 </select>
-                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
-                    документу?</label>
-                <select name="localeDoc" class="form-select" id="locale_doc">
-                    <option value="UA" th:text="#{lang.ua}">Українська</option>
-                    <option value="EN" th:text="#{lang.en}">Англійська</option>
-                </select>
-
             </div>
             <button type="submit" class="btn btn-primary w-100" th:text="#{page.upload.name}">Завантажити</button>
         </form>
 
     </div>
 </div>
+
+<hr class="my-4">
+
 <div class="mt-2" th:if="statistic != null ">
     <div class="invalid-feedback">
         Будь-ласка, оберіть файл DOCX !
@@ -99,7 +101,7 @@
 <!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
 <!--            <td></td>-->
 <!--        </tr>-->
-        <tr>
+        <tr style="display: none;">
             <td th:text="#{ref.num_pages}">Кількість сторінок</td>
             <td th:text="${statistic != null ? statistic.countPages : ''}"></td>
         </tr>

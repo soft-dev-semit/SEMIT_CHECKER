@@ -37,7 +37,8 @@ public class DocStatistic {
         //Ukrainian options
         sb = new StringBuilder("Реферат: ");
         if (countPages > 0) {
-            sb.append(countPages).append(" стор.");
+            String countPagesStr = countPages==777? "NN" : ""+countPages;
+            sb.append(countPagesStr).append(" стор.");
             if (countFigures > 0) {
                 sb.append(", ").append(countFigures).append(" рис.");
             }
@@ -61,7 +62,8 @@ public class DocStatistic {
         //English options
         sb = new StringBuilder("Abstract: ");
         if (countPages > 0) {
-            sb.append(countPages).append(" p.");
+            String countPagesStr = countPages==777? "NN" : ""+countPages;
+            sb.append(countPagesStr).append(" p.");
             if (countFigures > 0) {
                 sb.append(", ").append(countFigures).append(" fig.");
             }

@@ -45,7 +45,9 @@ public class CalcDocStatistic {
         res.setFilename(docName);
         res.setDocLocale(docLocale);
         res.setWordLocale(wordLocale);
-        res.setCountPages(this.getCountPages());
+        //Прибране тимчасово до пошуку більш швидкої реалізації
+//        res.setCountPages(this.getCountPages());
+        res.setCountPages(777);
         res.setCountFigures(this.getCountFigures());
         res.setCountTables(this.getCountTables());
         res.setCountSources(this.getCountSources());
@@ -72,10 +74,12 @@ public class CalcDocStatistic {
     }
 
 
+    //Рахує сторінки шляхом перетворення в пдф, його зчитування та використовуючи методи обробки пдф-файлів
+    //ПОКИ ВІДХИЛЕНИЙ ВІД ЗАСТОСУВАННЯ!
     public int getCountPages() {
         int count = -1;
-        //TODO ПРОВЕРИТь НА СЕРВЕРЕ!!!!
-        //TODO Будет ли работать без libreoffice
+//        ПРОВЕРИТь НА СЕРВЕРЕ!!!!  <===== НЕ ПОШЕЛ, АЛЕ ПЕРЕВІРКА БУЛА ПОВЕРХНЕВА
+//        Будет ли работать без libreoffice  <===== НЕ ПРАЦЮЄ! АЛЕ НЕ ТОЧНО
         File inputFile = new File(docName);
         File outputFile = new File(docName.replace(".docx", ".pdf"));
         //Проверить наличие файла пдф с таким именем, чтобы дважды не делать конвертацию - это занимает время
