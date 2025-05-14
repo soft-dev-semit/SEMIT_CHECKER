@@ -41,7 +41,8 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                 break;
             }
         }
-        return para.getStyle() != null && isStandardHeading;
+        String heading1 = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles").getString("H1");
+        return para.getStyle() == heading1 && isStandardHeading;
     }
 
     private void checkRequiredSections(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
@@ -53,14 +54,37 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
             }
         }
         List<String> standards = List.of(StandardHeadings.getAllHeadingsLocalized(checkParams));
-        if (standards.equals(foundStandards)) {
-            return;
-        }
-        for (int i = 0; i < StandardHeadings.values().length; i++) {
-            if (foundStandards.get(i) != standards.get(i)) {
-                errorsList.addError(foundStandards.get(i), "errorStandardHeadingWrongPlace");
+        for (int i = 0; i < foundStandards.size(); i++) {
+            if (foundStandards.get(i).toUpperCase().startsWith(StandardHeadings.APPENDIX.getHeadingLocalized(checkParams))) {
+                continue;
+            }
+            if (i > standards.size() - 1 || !foundStandards.get(i).equals(standards.get(i))) {
+                errorsList.addError(standards.get(i), "errorStandardHeadingWrongPlace");
             }
         }
+    }
+
+    private int getHeadingLevel(XWPFParagraph para, CheckParams checkParams) {
+        String style = para.getStyle(); // Get the style, which might be null
+        if (style == null) {
+            return 0;
+        }
+
+        ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord());
+        String heading1 = rb.getString("H1");
+        String heading2 = rb.getString("H2");
+        String heading3 = rb.getString("H3");
+        String heading4 = rb.getString("H4");
+
+        String[] headingStyles = {heading1, heading2, heading3, heading4};
+        int level = 1;
+        for (String s : headingStyles) {
+            if (para.getStyle().equals(s)) {
+                return level;
+            }
+            level++;
+        }
+        return 0;
     }
 
     private void checkHeadingSpacings(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
@@ -68,14 +92,15 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         for (int i = 0; i < paragraphs.size(); i++) {
             XWPFParagraph para = paragraphs.get(i);
             String style = para.getStyle();
-            if (style != null && style.matches("Heading[1-4]")) {
+
+            if (style != null && getHeadingLevel(para, checkParams) != 0) {
                 if (i > 0 && !paragraphs.get(i - 1).getText().isEmpty()) {
                     errorsList.addError(para.getText(), "errorNoEmptyLineBeforeHeading");
                 }
                 if (i < paragraphs.size() - 1 && !paragraphs.get(i + 1).getText().isEmpty()) {
                     errorsList.addError(para.getText(), "errorNoEmptyLineAfterHeading");
                 }
-                if (style.equals("Heading1")) {
+                if (getHeadingLevel(para, checkParams) == 1) {
                     if (i > 0 && !paragraphs.get(i - 1).getText().isEmpty()) {
                         errorsList.addError(para.getText(), "errorHeading1NotOnNewPage");
                     }
@@ -96,16 +121,8 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
         int[] currentLevel = new int[]{0, 0, 0, 0};
         for (XWPFParagraph para : paragraphs) {
-            String style = para.getStyle();
-            String[] headingStyles = {"H1", "H2", "H3", "H4"};
-//            for (int i = 0; i < headingStyles.length; i++) {
-//                if (style != null && style.matches(ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles",
-//                        checkParams.getLocaleWord()).getString(headingStyles[i]))) {
-//
-//                }
-//            }
-            if (style != null && style.matches("Heading[1-4]")) {
-                int level = Integer.parseInt(style.replace("Heading", ""));
+            int level = getHeadingLevel(para, checkParams);
+            if (level != 0) {
                 String text = para.getText().trim();
                 Pattern pattern = Pattern.compile("^(\\d+(\\.\\d+)*)\\s+.*");
                 Matcher matcher = pattern.matcher(text);
@@ -132,7 +149,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
     private void checkSectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
         for (XWPFParagraph para : paragraphs) {
-            if ("Heading1".equals(para.getStyle())) {
+            if (getHeadingLevel(para, checkParams) == 1) {
                 String text = para.getText().trim();
                 if (!text.equals(text.toUpperCase())) {
                     errorsList.addError(text, "errorHeading1NotUppercase");
@@ -162,7 +179,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
         for (XWPFParagraph para : paragraphs) {
             String style = para.getStyle();
-            if (style != null && style.matches("Heading[2-4]")) {
+            if (style != null && getHeadingLevel(para, checkParams) >= 2 && getHeadingLevel(para, checkParams) <=4) {
                 String text = para.getText().trim();
                 Pattern pattern = Pattern.compile("^\\d+(\\.\\d+)*\\s+([A-Z][a-z\\s]+)$");
                 if (!pattern.matcher(text).matches()) {

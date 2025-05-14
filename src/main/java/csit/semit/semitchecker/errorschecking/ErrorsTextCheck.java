@@ -19,23 +19,27 @@ public class ErrorsTextCheck implements IErrorsCheckable {
         for (XWPFParagraph paragraph : paragraphList) {
             String text = paragraph.getText().trim();
             if (paragraph.getStyle() != null || text.isEmpty()) {
-                errorPositionParagraph++;
+                if (paragraph.getStyle() != null)
+                    errorPositionParagraph++;
                 continue;
             }
             for (XWPFRun run : paragraph.getRuns()) {
                 String fontName = run.getFontName();
                 if (fontName == null || !fontName.equals("Times New Roman")) {
-                    errorsList.addError(errorPositionParagraph + " paragraph", "errorFontWrongName");
+                    errorsList.addError("Paragraph " + errorPositionParagraph, "errorFontWrongName");
                 }
-                int fontSize = run.getFontSize();
-                if (fontSize != 14 && fontSize != -1) { // -1 means default, we'll assume it's incorrect
-                    errorsList.addError(errorPositionParagraph + " paragraph","errorFontWrongSize");
+                Double fontSize = run.getFontSizeAsDouble();
+                double expectedFontSize = 14.0 * 2;
+                if (fontSize != null && fontSize != expectedFontSize) {
+                    errorsList.addError("Paragraph " + errorPositionParagraph, "errorFontWrongSize");
+                }
+                else if (fontSize == null) {
+                    errorsList.addError("Paragraph " + errorPositionParagraph, "errorFontWrongSize");
                 }
                 String color = run.getColor();
                 if (color != null && !color.equalsIgnoreCase("000000")) {
-                    errorsList.addError(errorPositionParagraph + " paragraph","errorFontWrongColor");
+                    errorsList.addError("Paragraph " + errorPositionParagraph,"errorFontWrongColor");
                 }
-
             }
         }
     }
@@ -51,15 +55,15 @@ public class ErrorsTextCheck implements IErrorsCheckable {
             }
             int firstLineIndent = paragraph.getIndentationFirstLine();
             if (firstLineIndent != 709) { // 1.25 cm = 709 twips (1 cm = 567 twips)
-                errorsList.addError(errorPositionParagraph + " paragraph", "errorParagraphWrongIndent");
+                errorsList.addError("Paragraph " + errorPositionParagraph, "errorParagraphWrongIndent");
             }
             if (paragraph.getAlignment() != ParagraphAlignment.BOTH) {
-                errorsList.addError(errorPositionParagraph + " paragraph", "errorParagraphWrongAlignment");
+                errorsList.addError("Paragraph " + errorPositionParagraph, "errorParagraphWrongAlignment");
             }
             LineSpacingRule spacingRule = paragraph.getSpacingLineRule();
             int lineSpacing = (int) paragraph.getSpacingBetween();
             if (spacingRule != LineSpacingRule.AUTO || lineSpacing != 360) { // 1.5 * 240 = 360 twips
-                errorsList.addError(errorPositionParagraph + " paragraph", "errorParagraphWrongLineSpacing");
+                errorsList.addError("Paragraph " + errorPositionParagraph, "errorParagraphWrongLineSpacing");
             }
         }
     }

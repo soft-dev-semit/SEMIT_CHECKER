@@ -1,11 +1,14 @@
 package csit.semit.semitchecker.serviceenums;
 
 import csit.semit.semitchecker.errorschecking.CheckParams;
+import lombok.Getter;
 
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+@Getter
 public enum StandardHeadings {
-    ABSTRACT("referat"),
+    //ABSTRACT("referat"),
     CONTENTS("zmist"),
     ABBREVIATIONS("abbr"),
     INTRODUCTION("vstup"),
@@ -19,13 +22,13 @@ public enum StandardHeadings {
         this.heading = heading;
     }
 
-    public String getHeading() {
-        return heading;
-    }
-
     public String getHeadingLocalized(CheckParams checkParams) {
-        return ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords",
-                checkParams.getLocaleDoc()).getString(heading);
+        try {
+            return ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords",
+                    checkParams.getLocaleDoc()).getString(getHeading());
+        } catch (MissingResourceException e) {
+            return getHeading();
+        }
     }
 
     public static String[] getAllHeadingsLocalized(CheckParams checkParams) {
