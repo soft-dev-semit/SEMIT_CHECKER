@@ -21,13 +21,14 @@
             </a>
         </div>
         <form id="loadfileform"
-                action="#"
-                th:action="@{/{localeInterface}/choose-file(localeInterface=${localeInterface})}"
-                method="post"
-                enctype="multipart/form-data"
-                th:hx-post="@{/{localeInterface}/choose-file(localeInterface=${localeInterface})}"
-                hx-trigger="submit"
-                hx-target="#file-list">
+              action="#"
+              th:action="@{/{localeInterface}/upload(localeInterface=${localeInterface})}"
+              method="post"
+              enctype="multipart/form-data"
+              th:hx-post="@{/{localeInterface}/upload
+                (localeInterface=${localeInterface})}"
+              hx-trigger="submit"
+              hx-target="#file-list">
             <!--                    hx-swap="outerHTML">-->
 
             <div class="mb-3">
@@ -39,12 +40,6 @@
                        name="file"
                        accept=".docx"
                        required>
-                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
-                    документу?</label>
-                <select name="localeDoc" class="form-select" id="locale_doc">
-                    <option value="UA" th:text="#{lang.ua}">Українська</option>
-                    <option value="EN" th:text="#{lang.en}">Англійська</option>
-                </select>
                 <label for="locale_word" class="form-label" th:text="#{page.choose_locale_word}">Яка мова інтерфейсу
                     Word була встановлена при збереженні файлу?</label>
                 <select name="localeWord" class="form-select" id="locale_word">
@@ -52,6 +47,16 @@
                     <option value="EN" th:text="#{lang.en}">Англійська</option>
                     <option value="RU" th:text="#{lang.ru}">Харківська</option>
                 </select>
+                <label for="locale_doc" class="form-label" th:text="#{page.choose_locale_doc}">Яка мова
+                    документу?</label>
+                <select name="localeDoc" class="form-select" id="locale_doc">
+                    <option value="UA" th:text="#{lang.ua}">Українська</option>
+                    <option value="EN" th:text="#{lang.en}">Англійська</option>
+                </select>
+                <div th:switch="${uploadFileRes}">
+                    <p th:case="true" th:text="#{upload.success(${statistic.filename})}" th:classappend="'alert alert-success'"></p>
+                    <p th:case="false" th:text="#{upload.fail(${statistic.filename})}" th:classappend="'alert alert-danger'"></p>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary w-100" th:text="#{page.upload.name}">Завантажити</button>
         </form>
@@ -71,7 +76,7 @@
             <td th:text="#{ref.filename}">Ім'я файлу</td>
             <td th:text="${statistic != null ? statistic.filename : ''}"></td>
         </tr>
-<!--        //Версія, коли дані для вибору локалі є саме позначенням локали-->
+        <!--        //Версія, коли дані для вибору локалі є саме позначенням локали-->
         <tr>
             <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>
             <td th:text="${statistic != null ? statistic.wordLocale : ''}"></td>
@@ -80,27 +85,27 @@
             <td th:text="#{ref.docLocale}">Мова документу</td>
             <td th:text="${statistic != null ? statistic.docLocale : ''}"></td>
         </tr>
-<!--        //Версія, коли дані для перевірки беруться з комбобоксів для вибору локалі-->
-<!--        <tr th:if="${statistic != null}"-->
-<!--            th:with="localizedNameDoc=${#messages.msgOrNull('ref.' + statistic.docLocale.toString())}">-->
-<!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
-<!--            <td th:text="${localizedNameDoc != null ? localizedNameDoc : ''}"></td>-->
-<!--            <td hidden id="docLocaleCode" th:text="${statistic.docLocale}"></td>-->
-<!--        </tr>-->
-<!--        <tr th:unless="${statistic != null}">-->
-<!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
-<!--            <td></td>-->
-<!--        </tr>-->
-<!--        <tr th:if="${statistic != null}"-->
-<!--            th:with="localizedNameWord=${#messages.msgOrNull('ref.' + statistic.wordLocale.toString())}">-->
-<!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
-<!--            <td th:text="${localizedNameWord != null ? localizedNameWord : ''}"></td>-->
-<!--            <td hidden id="wordLocaleCode" th:text="${statistic.wordLocale}"></td>-->
-<!--        </tr>-->
-<!--        <tr th:unless="${statistic != null}">-->
-<!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
-<!--            <td></td>-->
-<!--        </tr>-->
+        <!--        //Версія, коли дані для перевірки беруться з комбобоксів для вибору локалі-->
+        <!--        <tr th:if="${statistic != null}"-->
+        <!--            th:with="localizedNameDoc=${#messages.msgOrNull('ref.' + statistic.docLocale.toString())}">-->
+        <!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
+        <!--            <td th:text="${localizedNameDoc != null ? localizedNameDoc : ''}"></td>-->
+        <!--            <td hidden id="docLocaleCode" th:text="${statistic.docLocale}"></td>-->
+        <!--        </tr>-->
+        <!--        <tr th:unless="${statistic != null}">-->
+        <!--            <td th:text="#{ref.docLocale}">Мова документу</td>-->
+        <!--            <td></td>-->
+        <!--        </tr>-->
+        <!--        <tr th:if="${statistic != null}"-->
+        <!--            th:with="localizedNameWord=${#messages.msgOrNull('ref.' + statistic.wordLocale.toString())}">-->
+        <!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
+        <!--            <td th:text="${localizedNameWord != null ? localizedNameWord : ''}"></td>-->
+        <!--            <td hidden id="wordLocaleCode" th:text="${statistic.wordLocale}"></td>-->
+        <!--        </tr>-->
+        <!--        <tr th:unless="${statistic != null}">-->
+        <!--            <td th:text="#{ref.wordLocale}">Мова інтерфейсу Word</td>-->
+        <!--            <td></td>-->
+        <!--        </tr>-->
         <tr style="display: none;">
             <td th:text="#{ref.num_pages}">Кількість сторінок</td>
             <td th:text="${statistic != null ? statistic.countPages : ''}"></td>
@@ -138,113 +143,113 @@
           method="POST">
         <input type="submit" class="btn btn-primary w-100" th:value="#{check.start}"/>
     </form>
-<!--    <table class="table table-warning table-striped table-hover table-bordered align-middle">-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.full}">Повна перевірка</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/{localInterface}/check/total (localInterface=${localInterface})}" method="POST">-->
-<!--                    <input hidden name="total"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{showfullreport}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="total"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.page_param}">Параметри сторінки</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/boundaries}" method="POST">-->
-<!--                    <input hidden name="boundaries"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{boundaries/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="boundaries"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.headers}">Заголовки</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/headers}" method="POST">-->
-<!--                    <input hidden name="headers"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{headers/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="headers"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.tables}">Таблиці</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/tables}" method="POST">-->
-<!--                    <input hidden name="tables"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{tables/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="tables"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.figures}">Рисунки</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/pictures}" method="POST">-->
-<!--                    <input hidden name="pictures"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{pictures/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="pictures"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.pereliki}">Переліки</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/pereliki}" method="POST">-->
-<!--                    <input hidden name="lists"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{pereliki/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="lists"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--        <tr>-->
-<!--            <td th:text="#{check.references}">Перелік джерел</td>-->
-<!--            <td>-->
-<!--                <form th:action="@{/check/references}" method="POST">-->
-<!--                    <input hidden name="references"/>-->
-<!--                    <input type="submit" th:value="#{check.start}"/>-->
-<!--                </form>-->
-<!--            </td>-->
-<!--            &lt;!&ndash;            <td>&ndash;&gt;-->
-<!--            &lt;!&ndash;                <form th:action="@{references/show}" method="POST">&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input hidden name="references"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
-<!--            &lt;!&ndash;                </form>&ndash;&gt;-->
-<!--            &lt;!&ndash;            </td>&ndash;&gt;-->
-<!--        </tr>-->
-<!--    </table>-->
+    <!--    <table class="table table-warning table-striped table-hover table-bordered align-middle">-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.full}">Повна перевірка</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/{localInterface}/check/total (localInterface=${localInterface})}" method="POST">-->
+    <!--                    <input hidden name="total"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{showfullreport}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="total"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.page_param}">Параметри сторінки</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/boundaries}" method="POST">-->
+    <!--                    <input hidden name="boundaries"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{boundaries/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="boundaries"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.headers}">Заголовки</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/headers}" method="POST">-->
+    <!--                    <input hidden name="headers"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{headers/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="headers"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.tables}">Таблиці</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/tables}" method="POST">-->
+    <!--                    <input hidden name="tables"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{tables/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="tables"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.figures}">Рисунки</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/pictures}" method="POST">-->
+    <!--                    <input hidden name="pictures"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{pictures/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="pictures"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.pereliki}">Переліки</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/pereliki}" method="POST">-->
+    <!--                    <input hidden name="lists"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{pereliki/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="lists"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--        <tr>-->
+    <!--            <td th:text="#{check.references}">Перелік джерел</td>-->
+    <!--            <td>-->
+    <!--                <form th:action="@{/check/references}" method="POST">-->
+    <!--                    <input hidden name="references"/>-->
+    <!--                    <input type="submit" th:value="#{check.start}"/>-->
+    <!--                </form>-->
+    <!--            </td>-->
+    <!--            &lt;!&ndash;            <td>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                <form th:action="@{references/show}" method="POST">&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input hidden name="references"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                    <input type="submit" th:value="#{check.res}"/>&ndash;&gt;-->
+    <!--            &lt;!&ndash;                </form>&ndash;&gt;-->
+    <!--            &lt;!&ndash;            </td>&ndash;&gt;-->
+    <!--        </tr>-->
+    <!--    </table>-->
 </div>
 <script th:inline="javascript">
     //Код, щоб параметри, які обрані під час завантаження, були передані і в перевірку

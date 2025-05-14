@@ -2,10 +2,11 @@ package csit.semit.semitchecker.controller;
 
 import csit.semit.semitchecker.docutils.CalcDocStatistic;
 import csit.semit.semitchecker.docutils.DocStatistic;
-import csit.semit.semitchecker.errorschecking.CheckParams;
 import csit.semit.semitchecker.serviceenums.Lang;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -40,6 +42,7 @@ public class MainController {
 
         DocStatistic statistic = null;
         model.addAttribute("statistic", statistic);
+        model.addAttribute("uploadFileRes", null);
         return "SemitCheckerMainPage";
     }
 
@@ -78,22 +81,25 @@ public class MainController {
         statistic.setAbstractENRow(abstractEN);
 //        System.out.println(statistic);
         model.addAttribute("statistic", statistic);
+        model.addAttribute("uploadFileRes", null);
         return "SemitCheckerMainPage";
     }
 
-    @PostMapping("/{localeInterface}/choose-file")
+    @Autowired
+    private ServletContext servletContext;
+
+    @PostMapping("/{localeInterface}/upload")
     public String checkDocxReport(Model model,
                                   @RequestParam MultipartFile file,
                                   @PathVariable String localeInterface,
                                   @RequestParam String localeDoc,
                                   @RequestParam String localeWord,
                                   HttpServletRequest request) {
-
-
+        //Завантаження файлу з диску користувача
+        String docName = file.getOriginalFilename();
         DocStatistic statistic = null;
         String docLocale = localeDoc;
         String wordLocale = localeWord;
-        String docName = file.getOriginalFilename();
         CalcDocStatistic paramsCalc = null;
         try {
             InputStream inputStream = file.getInputStream();
@@ -101,18 +107,52 @@ public class MainController {
             statistic = paramsCalc.calcParam();
             inputStream.close();
         } catch (IOException e) {
+            //TODO What It necessary to do with mistake?!
             e.printStackTrace(System.err);
             statistic.setFilename("");
         }
+        //Заливка файлу на диск веб-серверу
+//        // Змінна для запису результату
+        boolean fileResUploadSuccess = false;
+        try {
+            // Отримуємо абсолютний шлях до папки для завантаження
+            String uploadDir = servletContext.getRealPath("/WEB-INF/uploads/");
+            File uploadDirFile = new File(uploadDir);
+            if (!uploadDirFile.exists()) {
+                uploadDirFile.mkdirs(); // Створюємо каталог, якщо він не існує
+            }
+
+            // Отримуємо ім'я файлу і формуємо шлях
+            String fileName = file.getOriginalFilename();
+            File destinationFile = new File(uploadDir, fileName);
+
+            // Перезаписуємо файл, якщо він вже існує
+            if (destinationFile.exists()) {
+                System.err.println("MainController: файл "+destinationFile.getAbsolutePath()+" вже був завантажений ==> ,буде вилучений перед оновленням");
+                destinationFile.delete(); // Видаляємо старий файл
+            } else {
+                System.out.println("MainController: завантажується файл: "+destinationFile.getAbsolutePath());
+            }
+            // Записується новий
+            file.transferTo(destinationFile);
+            System.out.println("MainController: файл: "+destinationFile.getAbsolutePath()+" успішно завантажений!");
+            fileResUploadSuccess = true;
+        } catch (IOException e) {
+            System.err.println("MainController: помилка завантаження файлу: " + e.getMessage());
+            e.printStackTrace();
+            fileResUploadSuccess = false;
+        }
+
         // Встановлення локали
         Locale locale = Lang.valueOf(localeInterface).getLocale();
         HttpSession session = request.getSession();
         session.setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, locale);
 
         model.addAttribute("statistic", statistic);
+        model.addAttribute("uploadFileRes", fileResUploadSuccess);
         return "SemitCheckerMainPage";
     }
-    @GetMapping(path = "/{localeInterface}/choose-file")
+    @GetMapping(path = "/{localeInterface}/upload")
     public String showErrorsShowPageGet(Model model, @PathVariable String localeInterface) {
         model.addAttribute("statistic", null);
         return "redirect:/" + localeInterface + "/mainpage";

@@ -36,13 +36,12 @@ public class ErrorProcessingTest {
     CheckParams checkParams;
 
     // Имя ворд-файлу для тестування обробки
-//    String docName = "checker_test_file_kr_ua2.docx";
-//    String docName = "Test-file-pereliki_ru_UA.docx";
+    String docName = "Test-file-pereliki_ru_UA.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
 //    String docName = "Test-file-pereliki_en_EN.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
-//      String docName = "checker_test_file_kr_ua2.docx";
-    String docName = "КР_МногоПомилок_ua_UA.docx";
+//    String docName = "КР_МногоПомилок_ua_UA.docx";
+//    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13.docx";
 
 
     @BeforeEach

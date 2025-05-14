@@ -4,7 +4,9 @@ import csit.semit.semitchecker.docutils.DocStatistic;
 import csit.semit.semitchecker.errorschecking.*;
 import csit.semit.semitchecker.serviceenums.Lang;
 import csit.semit.semitchecker.serviceenums.MultiLang;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,6 +30,9 @@ public class ErrorsShowController {
 
     @Autowired
     ErrorMessageGetter errorMessageGetter;
+
+    @Autowired
+    private ServletContext servletContext;
 
     @PostMapping(path = "/{localeInterface}/check")
     public String showErrorsShowPage(Model model,
@@ -41,9 +47,8 @@ public class ErrorsShowController {
                                      @RequestParam int countAppendixes,
                                      @RequestParam String abstractUA,
                                      @RequestParam String abstractEN,
-                                     HttpServletRequest request) throws IOException {
-//        System.out.println("localInterface=" + localeInterface);
-        //Яка мова інтерфейсу була встановлену у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
+                                     @NotNull HttpServletRequest request) {
+        //Яка мова інтерфейсу була встановлена у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
 //        Locale wordLocale= MultiLang.valueOf(localeWord).getLocale();
         Locale wordLocale = Locale.forLanguageTag(localeWord.replace("_", "-"));
         //На якій мові документ? Може бути тільки дві
@@ -54,35 +59,65 @@ public class ErrorsShowController {
         request.getSession().setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, interfaceLocale);
         //Створююється об'єкт із локалями для передачі в блок перевірки
         CheckParams checkParams = new CheckParams(wordLocale, docLocale, interfaceLocale);
-        //TEST=====Наступний рядок - для тестового виведення. Має бути закоментований
+
+        //Завантаження та обробка файлу
+        InputStream inputStreamForCheckDoc = null;
+        List<ErrorsListDTO> errorsListsReadyToWeb  = null;
+        try {
+            //TEST=====Наступний рядок - для тестового виведення. Має бути закоментований
 //        String docName = "Test-file-pereliki_ru_UA.docx";
-        //Наступний рядок - для "БОЙОГО" виведення
-        String docName = fileForCheck;
-        //Завантажується файл для перевіки
-        Path path = Paths.get(docName);
-        DocsErrorChecker docsErrorChecker = new DocsErrorChecker(Files.newInputStream(path), docName, checkParams);
-        //TEST=====Наступний рядок - для тестового виведення. Має бути закоментований
-        //createTestSet(...) формує тестовий набір помилок, який показує перевірку за двома напрямками
-        //docsErrorChecker.createTestSet(new Locale(localeWord), new Locale(localeDoc), locale);
-        //Наступний рядок - для "БОЙОГО" виведення
-        docsErrorChecker.checkDoc();
-        //=======================================
-        //Підготовка результатів перевірки до виведення
-        List<ErrorsList> errorsList = docsErrorChecker.getChecksResults();
-        List<ErrorsListDTO> errorsListsReadyToWeb = new ArrayList<>();
-        if (!errorsList.isEmpty()) {
-            for (ErrorsList errList: errorsList) {
-                if (!errList.getErrors().isEmpty()) {
-                    //Перетворення у DTO для відображення на веб-сторінці
-                    ErrorsListDTO errorsListDTO = new ErrorsListDTO(checkParams.getLocaleInterface());
-                    errorsListDTO.transformErrorsList(errList,true,errorMessageGetter, interfaceLocale);
-                    errorsListsReadyToWeb.add(errorsListDTO);
-                    //Тестове виведення у консоль - потім прибрати
+            String uploadDir = servletContext.getRealPath("/WEB-INF/uploads/");
+            //Наступний рядок - для "БОЙОГО" виведення
+            String docName = uploadDir + fileForCheck;
+            //Завантажується файл для перевіки
+            Path path = Paths.get(docName);
+            inputStreamForCheckDoc = Files.newInputStream(path);
+//            System.out.println("ShowErrorsController: file for check: "+path.toAbsolutePath());
+            DocsErrorChecker docsErrorChecker = new DocsErrorChecker(inputStreamForCheckDoc, docName, checkParams);
+            //TEST=====Наступний рядок - для тестового виведення . Має бути закоментований
+            //createTestSet(...) формує тестовий набір помилок, який показує перевірку за двома напрямками
+            //docsErrorChecker.createTestSet(new Locale(localeWord), new Locale(localeDoc), locale);
+            //Наступний рядок - для "БОЙОГО" виведення
+            docsErrorChecker.checkDoc();
+            System.out.println("ErrorsShowController: перевірка файлу "+docName+" успішно завершена");
+            //=======================================
+            //Підготовка результатів перевірки до виведення
+            List<ErrorsList> errorsList = docsErrorChecker.getChecksResults();
+            errorsListsReadyToWeb = new ArrayList<>();
+            if (!errorsList.isEmpty()) {
+                for (ErrorsList errList : errorsList) {
+                    if (!errList.getErrors().isEmpty()) {
+                        //Перетворення у DTO для відображення на веб-сторінці
+                        ErrorsListDTO errorsListDTO = new ErrorsListDTO(checkParams.getLocaleInterface());
+                        errorsListDTO.transformErrorsList(errList, true, errorMessageGetter, interfaceLocale);
+                        errorsListsReadyToWeb.add(errorsListDTO);
+                        //Тестове виведення у консоль - потім прибрати
 //                    System.out.println("Перелік помилок: тип - "+errorsListDTO.getErrorsType());
 //                    errorsListDTO.getErrorListReadyToShow().stream().forEach(System.out::println);
+                    }
+                }
+                model.addAttribute("noerrors", false);
+            } else {
+                model.addAttribute("noerrors", true);
+            }
+        } catch (IOException e) {
+            System.err.println("ErrorsShowController: помилка відкриття файлу для перевірки - " + e.getMessage());
+            model.addAttribute("openfileForCheckProblem", true);
+            model.addAttribute("checkingProblem", false);
+        } catch (Exception e){
+            System.err.println("ErrorsShowController: неочікувана помилка при перевірці документу - " + e.getMessage());
+            model.addAttribute("fileForCheckOpenRes", false);
+            model.addAttribute("checkingProblem", true);
+        } finally {
+            if (inputStreamForCheckDoc!=null) {
+                try {
+                    inputStreamForCheckDoc.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
+        //Перелік помилок (пустий чи ні) додається як атрибут
         model.addAttribute("checksResults", errorsListsReadyToWeb);
         //Параметри, що повернутись обратно на сторінку та видати дані про файл
         DocStatistic statistic = new DocStatistic();
@@ -103,7 +138,7 @@ public class ErrorsShowController {
     }
 
     @GetMapping(path = "/{localeInterface}/check")
-    public String showErrorsShowPageGet(Model model, @PathVariable String localeInterface) {
+    public String showErrorsShowPageGet(@NotNull Model model, @PathVariable String localeInterface) {
         model.addAttribute("statistic", null);
         return "redirect:/" + localeInterface + "/mainpage";
     }

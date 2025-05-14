@@ -5,12 +5,12 @@ import csit.semit.semitchecker.serviceenums.MultiLang;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.pdfbox.pdmodel.PDDocument;
+//import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.poi.xwpf.usermodel.*;
-import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
-import org.jodconverter.core.office.OfficeException;
-import org.jodconverter.local.LocalConverter;
-import org.jodconverter.local.office.LocalOfficeManager;
+//import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
+//import org.jodconverter.core.office.OfficeException;
+//import org.jodconverter.local.LocalConverter;
+//import org.jodconverter.local.office.LocalOfficeManager;
 
 
 import java.io.File;
@@ -76,49 +76,49 @@ public class CalcDocStatistic {
 
     //Рахує сторінки шляхом перетворення в пдф, його зчитування та використовуючи методи обробки пдф-файлів
     //ПОКИ ВІДХИЛЕНИЙ ВІД ЗАСТОСУВАННЯ!
-    public int getCountPages() {
-        int count = -1;
-//        ПРОВЕРИТь НА СЕРВЕРЕ!!!!  <===== НЕ ПОШЕЛ, АЛЕ ПЕРЕВІРКА БУЛА ПОВЕРХНЕВА
-//        Будет ли работать без libreoffice  <===== НЕ ПРАЦЮЄ! АЛЕ НЕ ТОЧНО
-        File inputFile = new File(docName);
-        File outputFile = new File(docName.replace(".docx", ".pdf"));
-        //Проверить наличие файла пдф с таким именем, чтобы дважды не делать конвертацию - это занимает время
-        if (!outputFile.exists()) {
-            // Запускаем LibreOffice для конвертации
-            var officeManager = LocalOfficeManager.install();
-            try {
-                officeManager.start();
-
-                // Конвертация .docx → .pdf
-                LocalConverter.builder()
-                        .officeManager(officeManager)
-                        .build()
-                        .convert(inputFile)
-                        .to(outputFile)
-                        .as(DefaultDocumentFormatRegistry.PDF)
-                        .execute();
-
-                System.out.println("Конвертация завершена ... ");
-
-            } catch (OfficeException e) {
-                throw new RuntimeException("Ошибка при конвертации в pdf", e);
-            } finally {
-                try {
-                    officeManager.stop();
-                } catch (OfficeException ignored) {
-                }
-            }
-        }
-        // Получаем количество страниц в PDF
-        //!!! Но додати треба одинцю, бо чистий файл без титулок починається із сторінки 2
-        try (PDDocument document = PDDocument.load(outputFile)) {
-            count = document.getNumberOfPages() + 1;
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при чтении PDF", e);
-        }
-
-        return count;
-    }
+//    public int getCountPages() {
+//        int count = -1;
+////        ПРОВЕРИТь НА СЕРВЕРЕ!!!!  <===== НЕ ПОШЕЛ, АЛЕ ПЕРЕВІРКА БУЛА ПОВЕРХНЕВА
+////        Будет ли работать без libreoffice  <===== НЕ ПРАЦЮЄ! АЛЕ НЕ ТОЧНО
+//        File inputFile = new File(docName);
+//        File outputFile = new File(docName.replace(".docx", ".pdf"));
+//        //Проверить наличие файла пдф с таким именем, чтобы дважды не делать конвертацию - это занимает время
+//        if (!outputFile.exists()) {
+//            // Запускаем LibreOffice для конвертации
+//            var officeManager = LocalOfficeManager.install();
+//            try {
+//                officeManager.start();
+//
+//                // Конвертация .docx → .pdf
+//                LocalConverter.builder()
+//                        .officeManager(officeManager)
+//                        .build()
+//                        .convert(inputFile)
+//                        .to(outputFile)
+//                        .as(DefaultDocumentFormatRegistry.PDF)
+//                        .execute();
+//
+//                System.out.println("Конвертация завершена ... ");
+//
+//            } catch (OfficeException e) {
+//                throw new RuntimeException("Ошибка при конвертации в pdf", e);
+//            } finally {
+//                try {
+//                    officeManager.stop();
+//                } catch (OfficeException ignored) {
+//                }
+//            }
+//        }
+//        // Получаем количество страниц в PDF
+//        //!!! Но додати треба одинцю, бо чистий файл без титулок починається із сторінки 2
+//        try (PDDocument document = PDDocument.load(outputFile)) {
+//            count = document.getNumberOfPages() + 1;
+//        } catch (IOException e) {
+//            throw new RuntimeException("Ошибка при чтении PDF", e);
+//        }
+//
+//        return count;
+//    }
 
     public int getCountFigures() {
         int count = -1;

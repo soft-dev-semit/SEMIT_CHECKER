@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 
 public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
@@ -34,12 +35,12 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         ErrorsList errorsList = new ErrorsList(checkParams.localeWord,checkParams.localeDoc,typeErrors);
         List<XWPFParagraph> xwpfParagraphs = xwpfDocument.getParagraphs();
         //"Правильне" форматування переліків задається 5 стилями
-        //Але деякі студенти форматують або стандартними переліками, або вручну.
+        //TODO Але деякі студенти форматують або стандартними переліками, або вручну.
         //Списки, створені "неправильним" чином, не будуть аналізуватися при перевірці.
         //Тому варто застосувати правильне форматування, що забезпечить аналіз інших фрагментів.
-        for (XWPFParagraph paragraph: xwpfParagraphs) {
-
-        }
+//        for (XWPFParagraph paragraph: xwpfParagraphs) {
+//
+//        }
         return errorsList;
     }
 
@@ -155,8 +156,8 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
                 //Знайти місце - пункт, в якому міститься
                 resFirst.perelikPlace = findHeader(xwpfParagraphs, posStartList, localeWord);
                 String firstItem = resFirst.perelikItems.get(0).getText();
-                int lengtFirstItem = firstItem.length() < 30 ? firstItem.length() : 30;
-                resFirst.perelikPlace += ": \"... " + firstItem.substring(0, lengtFirstItem) + "\"";
+                int lengtFirstItem = firstItem.length() < 100 ? firstItem.length() : 100;
+                resFirst.perelikPlace += ": "+pt+"<br>\"... " + firstItem.substring(0, lengtFirstItem) + "\"";
             }
         }
 
@@ -201,9 +202,20 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
     //Тобто метод готовий для пошуку переліку довільного типу
     public Perelik checkPerelik(Perelik perelik, @NotNull CheckParams checkParams, String typeErrors) {
         Perelik perelikWithErrors = perelik;
-        //TODO Для цих помилок у переліках було б доречно показувати, який тип переліку аналізується
+
+        //Підготовка переліку для накопичення помилок
         perelikWithErrors.errorsList = new ErrorsList(checkParams.getLocaleDoc(), checkParams.getLocaleWord(), typeErrors);
         List<XWPFParagraph> listParagraphs = perelikWithErrors.perelikItems;
+        //"Відсікається з даної перевірки список джерел інформації
+        //Його перевірка буде реалізована окремо.
+        //Загрузити локацію та назви стилів заголовків
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleWord());
+        String litra = bundle.getString("litra");
+        if (perelik.getPerelikPlace().toUpperCase().startsWith(litra)) {
+            //Якщо місце цього переліку в секції із джерелами, то просто вийти із нульовим переліком помилок
+            perelik.errorsList = perelikWithErrors.errorsList;
+            return perelik;
+        }
         XWPFParagraph parFirst = listParagraphs.get(0);
         String errorMsgText = "";
 
@@ -282,7 +294,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         //pereliki.items.capsstartsymbol: в деяких пунктах на початку треба змінити прописну літеру на рядкову (або навпаки для ListNumeric1)
         boolean badFirstChar = false;
         for (int i = 0; i < listParagraphs.size(); i++) {
-            badFirstChar = badFirstChar || (!listParagraphs.get(i).getText().matches(perelikWithErrors.perelikType.getMaskFirstSymbol()));
+            badFirstChar = badFirstChar || (!listParagraphs.get(i).getText().substring(0,1).matches(perelikWithErrors.perelikType.getMaskFirstSymbol()));
         }
         if (badFirstChar) {
             perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.items.caps_start_symbol");
@@ -290,8 +302,9 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
         //pereliki.items.wrong_semicolon_caps: в деяких пунктах зустрічається текст з великої літери після двокрапки
         boolean badSemicolonCaps = false;
+        Pattern pattern = Pattern.compile(".*:( |\u00A0)\\p{Lu}.*");
         for (int i = 0; i < listParagraphs.size(); i++) {
-            badSemicolonCaps = badSemicolonCaps || (!listParagraphs.get(i).getText().matches(": [A-ZА-ЯІЇЄ]"));
+            badSemicolonCaps = badSemicolonCaps || (pattern.matcher(listParagraphs.get(i).getText()).matches());
         }
         if (badSemicolonCaps) {
             perelikWithErrors.errorsList.addError(perelikWithErrors.getPerelikPlace(), "pereliki.items.wrong_semicolon_caps");

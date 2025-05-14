@@ -19,14 +19,13 @@ import java.util.Set;
 public class DocStatisticCalcTest {
 
     // Имя ворд-файлу для тестування обробки
-//    String docName = "DRB_test_ua_UA.docx";
+    String docName = "DRB_test_ua_UA.docx";
 //    String docName = "DRB_test_ua_EN.docx";
 //    String docName = "DRB_test_en_UA.docx";
-//    String docName = "Test-file-pereliki.uk.en.docx";
-//    String docName = "Test-file-pereliki.docx";
 //String docName = "КР_МногоПомилок_ua_UA.docx";
-String docName = "КР_МногоПомилок_en_UA.docx";
-    String wordLocale = "EN";
+//String docName = "КР_МногоПомилок_en_UA.docx";
+//String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13.docx";
+    String wordLocale = "UA";
     String docLocale = "UA";
 
     @Test
@@ -64,7 +63,7 @@ String docName = "КР_МногоПомилок_en_UA.docx";
     void calcParams() throws IOException {
         Path path = Paths.get(docName);
         CalcDocStatistic calcDocStatistic = new CalcDocStatistic(Files.newInputStream(path), docName, docLocale, wordLocale);
-        System.out.println("CountPages = "+ calcDocStatistic.getCountPages());
+//        System.out.println("CountPages = "+ calcDocStatistic.getCountPages());
         System.out.println("CountFigures = "+ calcDocStatistic.getCountFigures());
         System.out.println("CountTables = "+ calcDocStatistic.getCountTables());
         System.out.println("CountSources = "+ calcDocStatistic.getCountSources());

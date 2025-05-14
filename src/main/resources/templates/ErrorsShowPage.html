@@ -37,8 +37,20 @@
         </div>
         <h1 th:text="${statistic.filename}"></h1>
         <br>
+        <div th:switch="${openfileForCheckProblem}">
+            <p th:case="true" th:text="#{errors.file_open_problem}" th:classappend="'alert alert-danger'"></p>
+<!--            <p th:case="false" th:text="#{errors.errors}" th:classappend="'alert alert-danger'"></p>-->
+        </div>
+        <div th:switch="${noerrors}">
+            <p th:case="true" th:text="#{errors.noerrors}" th:classappend="'alert alert-success'"></p>
+            <p th:case="false" th:text="#{errors.errors}" th:classappend="'alert alert-danger'"></p>
+        </div>
+        <div th:switch="${checkingProblem}">
+            <p th:case="true" th:text="#{errors.find_errors_problem}" th:classappend="'alert alert-danger'"></p>
+            <!--            <p th:case="false" th:text="#{errors.errors}" th:classappend="'alert alert-danger'"></p>-->
+        </div>
         <div th:each="checkResult : ${checksResults}" class="mb-4">
-            <h4 class="mt-3" th:text="#{error.checktype} + ' ' + ${checkResult.errorsType}">Тип помилки</h4>
+            <h4 class="mt-3" th:text="#{errors.checktype} + ' ' + ${checkResult.errorsType}">Тип помилки</h4>
             <table class="table table-bordered table-sm">
                 <thead class="table-light">
                 <tr>
@@ -48,7 +60,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="err : ${checkResult.errorListReadyToShow}">
-                    <td th:text="${err.errorPlace}">Розділ</td>
+                    <td th:utext="${err.errorPlace}">Розділ</td>
                     <td th:text="${err.errorText}">Текст помилки</td>
                 </tr>
                 </tbody>
