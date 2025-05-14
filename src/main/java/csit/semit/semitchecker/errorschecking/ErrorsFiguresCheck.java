@@ -54,11 +54,14 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
                         XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1); //name should be here
                         String figureNumber = "not found";
 
-                        if (!nextParagraph.getText().matches(maskFigureName)) {
+                        if (!nextParagraph.getText()
+                                .replace("\r", "")
+                                .replace("\n", "")
+                                .matches(maskFigureName)) {
                             errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoFigureName");
                         } else { // перевіряти стилі тільки якщо були знайдені номери рисунків
                             Pattern pattern = Pattern.compile(maskFigureName);
-                            Matcher matcher = pattern.matcher(nextParagraph.getText());
+                            Matcher matcher = pattern.matcher(nextParagraph.getText().replace("\r", ""));
                             if (matcher.find()) {
                                 figureNumber = matcher.group(1);
                                 if (!"FigureNumber".equals(nextParagraph.getStyle())) {
@@ -97,14 +100,13 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
         if (figureNumber.equals("not found")) {
             String pos = "";
             for (int i = position; i >= 0; i--) {
-                if (!paragraphs.get(i).getText().isEmpty()) {
-                    pos = paragraphs.get(i).getText().substring(0, Math.min(paragraphs.get(i).getText().length(), 25));
+                if (paragraphs.get(i) != null && !paragraphs.get(i).getText().isEmpty()) {
+                    pos = paragraphs.get(i).getText().substring(0, Math.min(paragraphs.get(i).getText().length(), 100));
                     break;
                 }
             }
 
-            return findHeader(paragraphs, position, params) + bundle.getString("figureBeginning")
-                    + pos +  "\"";
+            return findHeader(paragraphs, position, params) + bundle.getString("figureBeginning") + pos +  "\"";
         } else {
             return bundle.getString("figurePosition") + figureNumber;
         }
@@ -121,19 +123,21 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
         );
 
         for (int i = startPos; i >= 0; i--) {
-            XWPFParagraph p = paragraphs.get(i);
-            String style = p != null ? p.getStyle() : null;
-            if (style != null && headers.contains(style)) {
-                int endIdx = p.getText().length();
-                String app = ResourceBundle
-                        .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
-                        .getString("dodatok");
-                if (p.getText().toLowerCase().contains(app.toLowerCase())) {
-                    endIdx = app.length() + 2;
-                } else {
-                    endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
+            if (paragraphs.get(i) != null) {
+                XWPFParagraph p = paragraphs.get(i);
+                String style = p != null ? p.getStyle() : null;
+                if (style != null && headers.contains(style)) {
+                    int endIdx = Math.min(p.getText().length(), 27);
+                    String app = ResourceBundle
+                            .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                            .getString("dodatok");
+                    if (p.getText().toLowerCase().contains(app.toLowerCase())) {
+                        endIdx = app.length() + 2;
+                    } else if (p.getText().substring(0, 1).matches("\\d")) {
+                        endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
+                    }
+                    return p.getText().substring(0, endIdx) + "... ";
                 }
-                return p.getText().substring(0, endIdx) + "... ";
             }
         }
         return noHeader + " ";

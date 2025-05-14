@@ -45,44 +45,47 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                     XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1);
                     String tableNumber = "Not found";
 
-                    if (prevParagraph.getText().matches(maskTableName)) { // table 1.1 - table name
+                    if (prevParagraph.getText()
+                            .replace("\r", "")
+                            .replace("\n", "")
+                            .matches(maskTableName)) { // table 1.1 - table name
                         tableNumber = findTableNumber(prevParagraph, maskTableName);
                         if (!"Not found".equals(tableNumber)) { // checking style for table name
                             if (!"TableNumber".equals(prevParagraph.getStyle())) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorTableNameStyle");
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorTableNameStyle");
                             }
                         }
                         if (!(nextParagraph.getText().isEmpty())) {
                             if (!(nextParagraph.getText().matches(maskTableEnd) || nextParagraph.getText().matches(maskTableCont))) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
                             }
                         }
                         if (bodyElements.get(i - 2) instanceof XWPFParagraph p && !p.getText().isEmpty()) {
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
                         }
                     } else if (prevParagraph.getText().matches(maskTableCont)) { // continuation of a table 1.1
                         tableNumber = findTableNumber(prevParagraph, maskTableCont);
                         if (!(bodyElements.get(i - 2) instanceof XWPFTable)) { // has to have table before it
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
                         }
                         if (!(bodyElements.get(i + 2) instanceof XWPFTable)) { // has to have table after it
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorContNoEnd");
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorContNoEnd");
                         }
                         if (!"Not found".equals(tableNumber)) { // checking style for table cont
                             if (!"TableNumber".equals(prevParagraph.getStyle())) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorTableContStyle");
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorTableContStyle");
                             }
                         }
                     } else if (prevParagraph.getText().matches(maskTableEnd)) { // end of table 1.1
                         tableNumber = findTableNumber(prevParagraph, maskTableEnd);
                         if (!(bodyElements.get(i - 2) instanceof XWPFTable)) { // has to have table before it
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorEndNoPrev");
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorEndNoPrev");
                         }
                         if (!nextParagraph.getText().isEmpty()) {
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
                         }
                     } else { // name wasn't found
-                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoTableName");
+                        errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoTableName");
                     }
 
                     // check styles inside the table
@@ -94,12 +97,9 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                             "TableNumber",
                             "FigureNumber"
                     );
-                    List<XWPFTableRow> rows = table.getRows();
-                    for (int rowN = 0; rowN < rows.size(); rowN++) {
-                        XWPFTableRow row = rows.get(rowN);
-                        List<XWPFTableCell> cells = row.getTableCells();
-                        for (int cellN = 0; cellN < cells.size(); cellN++) {
-                            XWPFTableCell cell = cells.get(cellN);
+                    for (int rowN = 0; rowN < table.getRows().size(); rowN++) {
+                        for (int cellN = 0; cellN < table.getRows().get(rowN).getTableCells().size(); cellN++) {
+                            XWPFTableCell cell = table.getRows().get(rowN).getTableCells().get(cellN);
                             for (XWPFParagraph paragraph : cell.getParagraphs()) {
                                 String style = paragraph.getStyle();
 
@@ -109,7 +109,7 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                                                 || run.isBold() || run.isItalic() || run.getUnderline() != UnderlinePatterns.NONE);
 
                                 if (hasBadStyle) {
-                                    errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber)
+                                    errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber)
                                                     + ", [" + (rowN + 1) + ";" + (cellN + 1) + "]",
                                             "errorCellStyle");
                                 }
@@ -123,10 +123,17 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
         return errors;
     }
 
-    private String getTablePlace(XWPFTable table, CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
+    private String getTablePlace(CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         if (tableNumber.equals("Not found")) {
-            return findHeader(paragraphs, position, params) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
+            String pos = "";
+            for (int i = position; i >= 0; i--) {
+                if (paragraphs.get(i) != null && !paragraphs.get(i).getText().isEmpty()) {
+                    pos = paragraphs.get(i).getText().substring(0, Math.min(paragraphs.get(i).getText().length(), 100));
+                    break;
+                }
+            }
+            return findHeader(paragraphs, position, params) + bundle.getString("tableBeginning") + pos + "\"";
         } else {
             return bundle.getString("tablePosition") + tableNumber;
         }
@@ -168,19 +175,21 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
         );
 
         for (int i = startPos; i >= 0; i--) {
-            XWPFParagraph p = paragraphs.get(i);
-            String style = p != null ? p.getStyle() : null;
-            if (style != null && headers.contains(style)) {
-                int endIdx = p.getText().length();
-                String app = ResourceBundle
-                        .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
-                        .getString("dodatok");
-                if (p.getText().toLowerCase().contains(app.toLowerCase())){
-                    endIdx = app.length() + 2;
-                } else {
-                    endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
+            if (paragraphs.get(i) != null) {
+                XWPFParagraph p = paragraphs.get(i);
+                String style = p != null ? p.getStyle() : null;
+                if (style != null && headers.contains(style)) {
+                    int endIdx = Math.min(p.getText().length(), 27);
+                    String app = ResourceBundle
+                            .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                            .getString("dodatok");
+                    if (p.getText().toLowerCase().contains(app.toLowerCase())) {
+                        endIdx = app.length() + 2;
+                    } else if (p.getText().substring(0, 1).matches("\\d")) {
+                        endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
+                    }
+                    return p.getText().substring(0, endIdx) + "... ";
                 }
-                return p.getText().substring(0, endIdx) + "... ";
             }
         }
         return noHeader + " ";
