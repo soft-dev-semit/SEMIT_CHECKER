@@ -15,4 +15,13 @@ public enum Lang {
     public Locale getLocale() {
         return locale;
     }
+
+    public static Lang getLangByLocale(Locale localeIn) {
+        for (Lang lang: Lang.values()) {
+            if (localeIn.equals(lang.getLocale())) {
+                return lang;
+            }
+        }
+        return null;
+    }
 }

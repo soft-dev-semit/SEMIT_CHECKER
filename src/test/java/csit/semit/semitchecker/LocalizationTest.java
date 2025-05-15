@@ -12,4 +12,8 @@ public class LocalizationTest {
         ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles.interfaces.mainpage-labels", new Locale("uk"));
         System.out.println(rb.getString("ref.filename"));
     }
+
+
+
+
 }

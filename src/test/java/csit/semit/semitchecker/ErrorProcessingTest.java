@@ -1,6 +1,5 @@
 package csit.semit.semitchecker;
 
-import csit.semit.semitchecker.errorschecking.ErrorMessageGetter;
 import csit.semit.semitchecker.errorschecking.*;
 import csit.semit.semitchecker.serviceenums.Lang;
 import csit.semit.semitchecker.serviceenums.MultiLang;
@@ -36,12 +35,13 @@ public class ErrorProcessingTest {
     CheckParams checkParams;
 
     // Имя ворд-файлу для тестування обробки
-    String docName = "Test-file-pereliki_ru_UA.docx";
+//    String docName = "Test-file-pereliki_ru_UA.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
 //    String docName = "Test-file-pereliki_en_EN.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
 //    String docName = "КР_МногоПомилок_ua_UA.docx";
 //    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13.docx";
+    String docName = "Шаталова_Blue.docx";
 
 
     @BeforeEach
@@ -62,13 +62,17 @@ public class ErrorProcessingTest {
         //Завантажується файл для перевіки
         path = Paths.get(docName);
         //Яка мова інтерфейсу була встановлену у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
-        localeWord = MultiLang.UA.getLocale();
+        localeWord = Locale.forLanguageTag("uk_UA".replace("_", "-"));
+        Locale localeWordNorm = MultiLang.getMultiLangByLocale(localeWord).getLocale();
+//        localeWord = MultiLang.UA.getLocale();
         //На якій мові документ? Може бути тільки дві
-        localeDoc = Lang.UA.getLocale();
+        localeDoc = Locale.forLanguageTag("uk_UA".replace("_", "-"));
+        Locale localeDocNorm = Lang.getLangByLocale(localeDoc).getLocale();
+//        localeDoc = Lang.UA.getLocale();
         //На якій мові показати помилки? Може бути тільки дві
         localeInterface = Lang.UA.getLocale();
         //Створююється об`єкт із локалями для передачі в блок перевірки
-        checkParams = new CheckParams(localeWord, localeDoc, localeInterface);
+        checkParams = new CheckParams(localeWordNorm, localeDocNorm, localeInterface);
     }
 
 
@@ -302,22 +306,51 @@ public class ErrorProcessingTest {
 
     }
 
+//    TODO Перевірка "потенційних" переліків
+//    @Test
+//    void testFindPossibleLists() throws IOException {
+//        XWPFDocument xwpfDocument = new XWPFDocument(Files.newInputStream(path));
+//        //Создается фабрика для проверки
+//        ErrorsPerelikiCheck errorsPerelikiCheck = new ErrorsPerelikiCheck();
+//
+//        ErrorsList errorsList = errorsPerelikiCheck.checkBadPereliks(xwpfDocument, checkParams, "pereliki");
+//        System.out.println("\nРЕЗУЛЬТАТИ ПЕРЕВІРКИ:");
+//        if (!errorsList.getErrors().isEmpty()) {
+//            ErrorsListDTO errorsListDTO = new ErrorsListDTO(checkParams.getLocaleInterface());
+//            errorsListDTO.transformErrorsList(errorsList, true, errorMessageGetter, localeInterface);
+//            System.out.println("Перелік помилок: тип - " + errorsListDTO.getErrorsType());
+//            errorsListDTO.getErrorListReadyToShow().stream().forEach(System.out::println);
+//        } else {
+//            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
+//        }
+//    }
+
+    //Перевірка методу для пояднення декількох параграфів в один. Для ListNumeric1
     @Test
-    void testFindPossibleLists() throws IOException {
+    void testReplaceText() throws IOException {
         XWPFDocument xwpfDocument = new XWPFDocument(Files.newInputStream(path));
         //Создается фабрика для проверки
         ErrorsPerelikiCheck errorsPerelikiCheck = new ErrorsPerelikiCheck();
-
-        ErrorsList errorsList = errorsPerelikiCheck.checkBadPereliks(xwpfDocument, checkParams, "pereliki");
-        System.out.println("\nРЕЗУЛЬТАТИ ПЕРЕВІРКИ:");
-        if (!errorsList.getErrors().isEmpty()) {
-            ErrorsListDTO errorsListDTO = new ErrorsListDTO(checkParams.getLocaleInterface());
-            errorsListDTO.transformErrorsList(errorsList, true, errorMessageGetter, localeInterface);
-            System.out.println("Перелік помилок: тип - " + errorsListDTO.getErrorsType());
-            errorsListDTO.getErrorListReadyToShow().stream().forEach(System.out::println);
-        } else {
-            System.out.println(errorMessageGetter.getMessage("pereliki.noerrors", checkParams.getLocaleInterface()));
-        }
+        System.out.println(errorsPerelikiCheck.joinParagraphs(xwpfDocument.getParagraphs(),310,4).getText());
     }
+
+    @Test
+    void testDefСountSentenceNumeric1() throws IOException {
+        XWPFDocument xwpfDocument = new XWPFDocument(Files.newInputStream(path));
+        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+        for (XWPFParagraph par: paragraphs) {
+            int count=0;
+            if (par.getText()!=null && par.getStyle()!=null) {
+                if (par.getStyle().equals(PerelikType.ListNumeric1.name())) {
+                    count = ErrorsPerelikiCheck.countSentences(par.getText());
+                    System.out.println("Numeric1 item (count ="+count+"):"+ par.getText());
+                }
+            }
+//            System.out.println("Numeric1 item (count ="+count+"):"+ par.getText());
+        }
+
+    }
+
+
 
 }

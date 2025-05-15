@@ -1,5 +1,7 @@
 package csit.semit.semitchecker.serviceenums;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Locale;
 
 public enum MultiLang {
@@ -16,5 +18,14 @@ public enum MultiLang {
 
     public Locale getLocale() {
         return locale;
+    }
+
+    public static @Nullable MultiLang getMultiLangByLocale(Locale localeIn) {
+        for (MultiLang lang: MultiLang.values()) {
+            if (localeIn.equals(lang.getLocale())) {
+                return lang;
+            }
+        }
+        return null;
     }
 }

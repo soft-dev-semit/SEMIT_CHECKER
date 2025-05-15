@@ -1,10 +1,15 @@
 package csit.semit.semitchecker.serviceenums;
 
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Locale;
+
 public enum PerelikType {
     ListMarkedSTD("[a-zа-яіїє\"]", ";", ":"),
-    ListNumeric1("[А-яA-ZІЇЄ\"]", ".", "."),
-    ListNumericA("[a-zа-яіїє\"]", ";", ":"),
-    ListNumericWithBracket("[a-zа-яіїє\"]", ";", ":");
+    ListNumericWithBracket("[a-zа-яіїє\"]", ";", ":"),
+    ListNumeric1("[A-ZА-Я}ІЇЄ\"]", ".", "."),
+    ListNumericAua("[a-zа-яіїє\"]", ";", ":"),
+    ListNumericAen("[a-z\"]", ";", ":");
 
     private final String maskFirstSymbol;
     private final String lastSymbol;
@@ -26,5 +31,14 @@ public enum PerelikType {
 
     public String getPrevSentSymbol() {
         return prevSentSymbol;
+    }
+
+    public static @Nullable PerelikType getPerelikTypeByStyleName(String styleName) {
+        for (PerelikType perelik: PerelikType.values()) {
+            if (perelik.name().equals(styleName)) {
+                return perelik;
+            }
+        }
+        return null;
     }
 }

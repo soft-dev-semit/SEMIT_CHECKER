@@ -51,14 +51,16 @@ public class ErrorsShowController {
         //Яка мова інтерфейсу була встановлена у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
 //        Locale wordLocale= MultiLang.valueOf(localeWord).getLocale();
         Locale wordLocale = Locale.forLanguageTag(localeWord.replace("_", "-"));
+        Locale localeWordNorm = MultiLang.getMultiLangByLocale(wordLocale).getLocale();
         //На якій мові документ? Може бути тільки дві
 //        Locale docLocale = Lang.valueOf(localeDoc).getLocale();
         Locale docLocale = Locale.forLanguageTag(localeDoc.replace("_", "-"));
+        Locale localeDocNorm = Lang.getLangByLocale(docLocale).getLocale();
         //На якій мові показати помилки? Може бути тільки дві
         Locale interfaceLocale = Lang.valueOf(localeInterface).getLocale();
         request.getSession().setAttribute(SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, interfaceLocale);
         //Створююється об'єкт із локалями для передачі в блок перевірки
-        CheckParams checkParams = new CheckParams(wordLocale, docLocale, interfaceLocale);
+        CheckParams checkParams = new CheckParams(localeWordNorm, localeDocNorm, interfaceLocale);
 
         //Завантаження та обробка файлу
         InputStream inputStreamForCheckDoc = null;
@@ -87,6 +89,7 @@ public class ErrorsShowController {
             if (!errorsList.isEmpty()) {
                 for (ErrorsList errList : errorsList) {
                     if (!errList.getErrors().isEmpty()) {
+//                        errList.getErrors().forEach(System.out::println);
                         //Перетворення у DTO для відображення на веб-сторінці
                         ErrorsListDTO errorsListDTO = new ErrorsListDTO(checkParams.getLocaleInterface());
                         errorsListDTO.transformErrorsList(errList, true, errorMessageGetter, interfaceLocale);
@@ -101,10 +104,12 @@ public class ErrorsShowController {
                 model.addAttribute("noerrors", true);
             }
         } catch (IOException e) {
+            e.printStackTrace();
             System.err.println("ErrorsShowController: помилка відкриття файлу для перевірки - " + e.getMessage());
             model.addAttribute("openfileForCheckProblem", true);
             model.addAttribute("checkingProblem", false);
         } catch (Exception e){
+            e.printStackTrace();
             System.err.println("ErrorsShowController: неочікувана помилка при перевірці документу - " + e.getMessage());
             model.addAttribute("fileForCheckOpenRes", false);
             model.addAttribute("checkingProblem", true);
