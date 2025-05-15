@@ -11,13 +11,14 @@ import java.util.stream.Collectors;
 public class ErrorsTablesCheck implements IErrorsCheckable {
 
     //TODO Ксенія - перевірка оформлення таблиць
-    //TODO - додати перевірку послідовності нумерації
-    //TODO - додати "Кінець таблиці _._"
+    //TODO К - додати перевірку послідовності нумерації
+    //TODO К - додати перевірку наявності посилань
+    // Подумати про вивід повідомлень для продовження та кінця таблиці
+
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "table");
         errors.addErrorList(checkTables(xwpfDocument, checkParams, typeErrors));
-//        System.out.println("CHECKED! ----- " + typeErrors);
         return errors;
     }
 
@@ -34,98 +35,117 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
 
         String maskTableName = bundleDoc.getString("maskTableName");
         String maskTableCont = bundleDoc.getString("maskTableCont");
+        String maskTableEnd = bundleDoc.getString("maskTableEnd");
 
         if (!document.getTables().isEmpty()) {
             for (int i = 0; i < bodyElements.size(); i++) {
                 if (bodyElements.get(i) instanceof XWPFTable table) {
+                    // ворд автоматично об'єднує таблиці які стоять одна за однією, винятку не повинно бути
                     XWPFParagraph prevParagraph = (XWPFParagraph) bodyElements.get(i - 1);
                     XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1);
                     String tableNumber = "Not found";
 
-                    // назва таблиці
-                    if (!prevParagraph.getText().matches(maskTableName)) {
-                        if (prevParagraph.getText().matches(maskTableCont)) {
-                            if (!(bodyElements.get(i - 2) instanceof XWPFTable)) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
-                            }
-                        } else {
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoTableName");
-                        }
-
-                    } else { // перевіряти стилі тільки якщо були знайдені номери таблиць
-                        Pattern pattern = Pattern.compile(maskTableName);
-                        Matcher matcher = pattern.matcher(prevParagraph.getText());
-                        if (matcher.find()) {
-                            tableNumber = matcher.group(1);
+                    if (prevParagraph.getText()
+                            .replace("\r", "")
+                            .replace("\n", "")
+                            .matches(maskTableName)) { // table 1.1 - table name
+                        tableNumber = findTableNumber(prevParagraph, maskTableName);
+                        if (!"Not found".equals(tableNumber)) { // checking style for table name
                             if (!"TableNumber".equals(prevParagraph.getStyle())) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorTableNameStyle");
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorTableNameStyle");
                             }
                         }
-                    }
-
-                    // параграф до таблиці
-                    if (!(bodyElements.get(i - 2) instanceof XWPFTable)) {
-                        XWPFParagraph paragraphBFName = (XWPFParagraph) bodyElements.get(i - 2);
-                        if (!paragraphBFName.getText().isEmpty()) {
-                            errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
-                        }
-                    }
-
-                    if (i < (bodyElements.size() - 2)) {
-                        if (!(bodyElements.get(i + 2) instanceof XWPFTable)) {
-                            // параграф після таблиці
-                            if (!nextParagraph.getText().isEmpty()) {
-                                errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+                        if (!(nextParagraph.getText().isEmpty())) {
+                            if (!(nextParagraph.getText().matches(maskTableEnd) || nextParagraph.getText().matches(maskTableCont))) {
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
                             }
                         }
+                        if (bodyElements.get(i - 2) instanceof XWPFParagraph p && !p.getText().isEmpty()) {
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankBfTable");
+                        }
+                    } else if (prevParagraph.getText().matches(maskTableCont)) { // continuation of a table 1.1
+                        tableNumber = findTableNumber(prevParagraph, maskTableCont);
+                        if (!(bodyElements.get(i - 2) instanceof XWPFTable)) { // has to have table before it
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorContNoPrev");
+                        }
+                        if (!(bodyElements.get(i + 2) instanceof XWPFTable)) { // has to have table after it
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorContNoEnd");
+                        }
+                        if (!"Not found".equals(tableNumber)) { // checking style for table cont
+                            if (!"TableNumber".equals(prevParagraph.getStyle())) {
+                                errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorTableContStyle");
+                            }
+                        }
+                    } else if (prevParagraph.getText().matches(maskTableEnd)) { // end of table 1.1
+                        tableNumber = findTableNumber(prevParagraph, maskTableEnd);
+                        if (!(bodyElements.get(i - 2) instanceof XWPFTable)) { // has to have table before it
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorEndNoPrev");
+                        }
+                        if (!nextParagraph.getText().isEmpty()) {
+                            errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoBlankAfTable");
+                        }
+                    } else { // name wasn't found
+                        errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber), "errorNoTableName");
                     }
 
-
-                    // перевірка стилів всередині таблиці
+                    // check styles inside the table
+                    Set<String> cellForbiddenStyles = Set.of(
+                            bundleWord.getString("H1"),
+                            bundleWord.getString("H2"),
+                            bundleWord.getString("H3"),
+                            bundleWord.getString("H4"),
+                            "TableNumber",
+                            "FigureNumber"
+                    );
                     for (int rowN = 0; rowN < table.getRows().size(); rowN++) {
-                        XWPFTableRow row = table.getRow(rowN);
-                        for (int cellN = 0; cellN < row.getTableCells().size(); cellN++) {
-                            XWPFTableCell cell = row.getCell(cellN);
+                        for (int cellN = 0; cellN < table.getRows().get(rowN).getTableCells().size(); cellN++) {
+                            XWPFTableCell cell = table.getRows().get(rowN).getTableCells().get(cellN);
                             for (XWPFParagraph paragraph : cell.getParagraphs()) {
-                                String h1 = bundleWord.getString("H1");
-                                String h2 = bundleWord.getString("H2");
-                                String h3 = bundleWord.getString("H3");
-                                String h4 = bundleWord.getString("H4");
+                                String style = paragraph.getStyle();
 
-                                if (paragraph.getStyle() != null) {
-                                    if (paragraph.getStyle().equals(h1)
-                                            || paragraph.getStyle().equals(h2)
-                                            || paragraph.getStyle().equals(h3)
-                                            || paragraph.getStyle().equals(h4)
-                                    ) {
-                                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber)
-                                                        + "[" + rowN + ";" + cellN + "]",
-                                                "errorCellStyle");
-                                    }
-                                } else {
-                                    if (paragraph.getRuns().stream().anyMatch(XWPFRun::isBold)
-                                            || paragraph.getRuns().stream().anyMatch(XWPFRun::isItalic)
-                                            || paragraph.getRuns().stream().anyMatch(run -> run.getUnderline() != UnderlinePatterns.NONE)) {
-                                        errors.addError(getTablePlace(table, checkParams, paragraphs, i, tableNumber)
-                                                + "[" + rowN + ";" + cellN + "]",
-                                                "errorCellStyle");
-                                    }
+                                boolean hasBadStyle = (style != null && cellForbiddenStyles.contains(style)) ||
+                                        paragraph.getRuns().stream().anyMatch(run ->
+                                                !(run.getColor() == null || "000000".equals(run.getColor()))
+                                                || run.isBold() || run.isItalic() || run.getUnderline() != UnderlinePatterns.NONE);
+
+                                if (hasBadStyle) {
+                                    errors.addError(getTablePlace(checkParams, paragraphs, i, tableNumber)
+                                                    + ", [" + (rowN + 1) + ";" + (cellN + 1) + "]",
+                                            "errorCellStyle");
                                 }
                             }
                         }
                     }
+
                 }
             }
         }
         return errors;
     }
 
-    private String getTablePlace(XWPFTable table, CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
+    private String getTablePlace(CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String tableNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/table", params.getLocaleInterface());
         if (tableNumber.equals("Not found")) {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tableBeginning") + table.getRow(0).getCell(0).getText().trim() + "\"";
+            String pos = "";
+            for (int i = position; i >= 0; i--) {
+                if (paragraphs.get(i) != null && !paragraphs.get(i).getText().isEmpty()) {
+                    pos = paragraphs.get(i).getText().substring(0, Math.min(paragraphs.get(i).getText().length(), 100));
+                    break;
+                }
+            }
+            return findHeader(paragraphs, position, params) + bundle.getString("tableBeginning") + pos + "\"";
         } else {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("tablePosition") + tableNumber;
+            return bundle.getString("tablePosition") + tableNumber;
+        }
+    }
+
+    private String findTableNumber(XWPFParagraph p, String mask) {
+        Pattern pattern = Pattern.compile(mask);
+        Matcher matcher = pattern.matcher(p.getText());
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return "Not found";
         }
     }
 
@@ -144,37 +164,34 @@ public class ErrorsTablesCheck implements IErrorsCheckable {
                     .collect(Collectors.toList());
     }
 
-    public String findHeader(@NotNull List<XWPFParagraph> xwpfParagraphs, int posStartFind, Locale localWord) {
-        //Готуються дані про стилі в залежності від призначеної локації
-        //Загрузити локацію та назви стилів заголовків
-        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", localWord);
-        String noheader = bundle.getString("noheader");
-        String h1 = bundle.getString("H1");
-        String h2 = bundle.getString("H2");
-        String h3 = bundle.getString("H3");
-        String h4 = bundle.getString("H4");
-        //Визначається заголовок частини документу, в якому знайдений перелік
-        String place = noheader;
-        int i = posStartFind;
-        boolean findEnd = false;
-        XWPFParagraph p;
-        do {
-            p = xwpfParagraphs.get(i);
-            if (p != null) {
-                if (p.getStyle() != null) {
-                    if (p.getStyle().equals(h4) || p.getStyle().equals(h3) || p.getStyle().equals(h2) || p.getStyle().equals(h1)) {
-                        int sizeHeader = Math.min(p.getText().length(), 27);
-                        place = p.getText().substring(0, sizeHeader) + "... ";
-                        findEnd = true;
+    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, CheckParams checkParams) {
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
+        String noHeader = bundle.getString("noheader");
+        Set<String> headers = Set.of(
+                bundle.getString("H1"),
+                bundle.getString("H2"),
+                bundle.getString("H3"),
+                bundle.getString("H4")
+        );
+
+        for (int i = startPos; i >= 0; i--) {
+            if (paragraphs.get(i) != null) {
+                XWPFParagraph p = paragraphs.get(i);
+                String style = p != null ? p.getStyle() : null;
+                if (style != null && headers.contains(style)) {
+                    int endIdx = Math.min(p.getText().length(), 27);
+                    String app = ResourceBundle
+                            .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                            .getString("dodatok");
+                    if (p.getText().toLowerCase().contains(app.toLowerCase())) {
+                        endIdx = app.length() + 2;
+                    } else if (p.getText().substring(0, 1).matches("\\d")) {
+                        endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
                     }
+                    return p.getText().substring(0, endIdx) + "... ";
                 }
             }
-            if (!findEnd) {
-                i--;
-            }
-        } while (i >= 0 && !findEnd);
-        return place;
+        }
+        return noHeader + " ";
     }
-
-
 }

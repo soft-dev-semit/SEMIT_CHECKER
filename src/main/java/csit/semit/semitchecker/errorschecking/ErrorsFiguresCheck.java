@@ -2,22 +2,24 @@ package csit.semit.semitchecker.errorschecking;
 
 import org.apache.poi.xwpf.usermodel.*;
 import org.jetbrains.annotations.NotNull;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDrawing;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
-// TODO - додати перевірку нумерації
+
+//TODO К - додати перевірку послідовності нумерації
+//TODO К - додати перевірку наявності посилань
 public class ErrorsFiguresCheck implements IErrorsCheckable {
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errors = new ErrorsList(checkParams.getLocaleWord(), checkParams.localeDoc, "figure");
         errors.addErrorList(checkFigures(xwpfDocument, checkParams, typeErrors));
-//        System.out.println("CHECKED! ----- " + typeErrors);
         return errors;
     }
 
@@ -26,7 +28,13 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
         ResourceBundle bundleDoc = ResourceBundle.getBundle("resourcesbundles/errorstexts/figure", checkParams.getLocaleDoc());
         ErrorsList errors = new ErrorsList(checkParams.localeDoc, checkParams.localeWord, typeErrors);
         List<IBodyElement> bodyElements = document.getBodyElements();
-        List<XWPFPictureData> pictures = document.getAllPictures();
+        List<CTDrawing> pictures = document.getBodyElements().stream()
+                .filter(e -> e instanceof XWPFParagraph)
+                .map(e -> (XWPFParagraph) e)
+                .flatMap(p -> p.getRuns().stream()
+                        .flatMap(r -> r.getCTR().getDrawingList().stream()))
+                .toList();
+
         List<XWPFParagraph> paragraphs = bodyElements.stream()
                 .map(e -> e instanceof XWPFParagraph ? (XWPFParagraph) e : null)
                 .collect(Collectors.toList());
@@ -43,15 +51,17 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
                     ) {
                         // абзац і має рисунок
                         XWPFParagraph prevParagraph = (XWPFParagraph) bodyElements.get(i - 1); //should be empty
-                        XWPFParagraph paragraphAFName = (XWPFParagraph) bodyElements.get(i + 2); //should be empty
                         XWPFParagraph nextParagraph = (XWPFParagraph) bodyElements.get(i + 1); //name should be here
                         String figureNumber = "not found";
 
-                        if (!nextParagraph.getText().matches(maskFigureName)) {
+                        if (!nextParagraph.getText()
+                                .replace("\r", "")
+                                .replace("\n", "")
+                                .matches(maskFigureName)) {
                             errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoFigureName");
                         } else { // перевіряти стилі тільки якщо були знайдені номери рисунків
                             Pattern pattern = Pattern.compile(maskFigureName);
-                            Matcher matcher = pattern.matcher(nextParagraph.getText());
+                            Matcher matcher = pattern.matcher(nextParagraph.getText().replace("\r", ""));
                             if (matcher.find()) {
                                 figureNumber = matcher.group(1);
                                 if (!"FigureNumber".equals(nextParagraph.getStyle())) {
@@ -60,20 +70,22 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
                             }
                         }
 
-                        // параграфи до та після рисунку
-                        if (!paragraphAFName.getText().isEmpty()) {
-                            errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankAfFigure");
-                        }
+                        // параграф до рисунка
                         if (!prevParagraph.getText().isEmpty()) {
                             errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankBfFigure");
+                        }
+                        // параграф після рисунку
+                        if (i < bodyElements.size() - 2) { // check that the picture is not last element of the doc
+                            XWPFParagraph paragraphAFName = (XWPFParagraph) bodyElements.get(i + 2); //should be empty
+                            if (!paragraphAFName.getText().isEmpty()) {
+                                errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorNoBlankAfFigure");
+                            }
                         }
 
                         // стиль абзацу з рисунком
                         if (!"Figure".equals(paragraph.getStyle())) {
                             errors.addError(getFigurePlace(checkParams, paragraphs, i, figureNumber), "errorFigureStyle");
                         }
-
-
                     }
                 }
             }
@@ -86,43 +98,50 @@ public class ErrorsFiguresCheck implements IErrorsCheckable {
     private String getFigurePlace(CheckParams params, @NotNull List<XWPFParagraph> paragraphs, int position, String figureNumber) {
         ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles/errorstexts/figure", params.getLocaleInterface());
         if (figureNumber.equals("not found")) {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("figureBeginning")
-                    + paragraphs.get(position - 2).getText().substring(0, Math.min(paragraphs.get(position - 2).getText().length(), 15)) + "\"";
+            String pos = "";
+            for (int i = position; i >= 0; i--) {
+                if (paragraphs.get(i) != null && !paragraphs.get(i).getText().isEmpty()) {
+                    pos = paragraphs.get(i).getText().substring(0, Math.min(paragraphs.get(i).getText().length(), 100));
+                    break;
+                }
+            }
+
+            return findHeader(paragraphs, position, params) + bundle.getString("figureBeginning") + pos +  "\"";
         } else {
-            return findHeader(paragraphs, position, params.localeWord) + bundle.getString("figurePosition") + figureNumber;
+            return bundle.getString("figurePosition") + figureNumber;
         }
     }
 
-    public String findHeader(@NotNull List<XWPFParagraph> xwpfParagraphs, int posStartFind, Locale localWord) {
-        //Готуються дані про стилі в залежності від призначеної локації
-        //Загрузити локацію та назви стилів заголовків
-        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", localWord);
-        String noheader = bundle.getString("noheader");
-        String h1 = bundle.getString("H1");
-        String h2 = bundle.getString("H2");
-        String h3 = bundle.getString("H3");
-        String h4 = bundle.getString("H4");
-        //Визначається заголовок частини документу, в якому знайдений перелік
-        String place = noheader;
-        int i = posStartFind;
-        boolean findEnd = false;
-        XWPFParagraph p;
-        do {
-            p = xwpfParagraphs.get(i);
-            if (p != null) {
-                if (p.getStyle() != null) {
-                    if (p.getStyle().equals(h4) || p.getStyle().equals(h3) || p.getStyle().equals(h2) || p.getStyle().equals(h1)) {
-                        int sizeHeader = Math.min(p.getText().length(), 27);
-                        place = p.getText().substring(0, sizeHeader) + "... ";
-                        findEnd = true;
+    public String findHeader(@NotNull List<XWPFParagraph> paragraphs, int startPos, CheckParams checkParams) {
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docstyles.docswordstyles", checkParams.getLocaleWord());
+        String noHeader = bundle.getString("noheader");
+        Set<String> headers = Set.of(
+                bundle.getString("H1"),
+                bundle.getString("H2"),
+                bundle.getString("H3"),
+                bundle.getString("H4")
+        );
+
+        for (int i = startPos; i >= 0; i--) {
+            if (paragraphs.get(i) != null) {
+                XWPFParagraph p = paragraphs.get(i);
+                String style = p != null ? p.getStyle() : null;
+                if (style != null && headers.contains(style)) {
+                    int endIdx = Math.min(p.getText().length(), 27);
+                    String app = ResourceBundle
+                            .getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc())
+                            .getString("dodatok");
+                    if (p.getText().toLowerCase().contains(app.toLowerCase())) {
+                        endIdx = app.length() + 2;
+                    } else if (p.getText().substring(0, 1).matches("\\d")) {
+                        endIdx = Character.getNumericValue(style.charAt(style.length() - 1)) + 1;
                     }
+                    return p.getText().substring(0, endIdx) + "... ";
                 }
             }
-            if (!findEnd) {
-                i--;
-            }
-        } while (i >= 0 && !findEnd);
-        return place;
+        }
+        return noHeader + " ";
     }
+
 
 }
