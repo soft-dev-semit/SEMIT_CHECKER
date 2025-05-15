@@ -4,20 +4,29 @@ import csit.semit.semitchecker.serviceenums.StandardHeadings;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.Comparator;
 
 public class ErrorsTitlesCheck implements IErrorsCheckable {
+    private static final String LEVEL1_HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*)\\s+([A-ZА-Я]+(\\.\\s+[A-ZА-Я]+)*)";
+    private static final String LEVEL2_TO_4_HEADING_PATTERN =
+            "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s+([A-ZА-Я][a-zа-я]*(\\.\\s+[A-ZА-Я][a-zа-я]*)*)";
+
+    // Допоміжний клас для зберігання інформації про заголовки
+    record HeadingInfo(int index, String text, boolean isStandard, String number) {}
+
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errorsList = new ErrorsList(checkParams.getLocaleWord(), checkParams.getLocaleDoc(), typeErrors);
         checkRequiredSections(xwpfDocument, checkParams, errorsList);
-        checkHeadingSpacings(xwpfDocument, checkParams, errorsList);
-        checkHeadingOrder(xwpfDocument, checkParams, errorsList);
+        //checkHeadingOrder(xwpfDocument, checkParams, errorsList);
         checkSectionFormatting(xwpfDocument, checkParams, errorsList);
         checkSubsectionFormatting(xwpfDocument, checkParams, errorsList);
         return errorsList;
@@ -87,73 +96,35 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         return 0;
     }
 
-    private void checkHeadingSpacings(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
+    private void checkSectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
         for (int i = 0; i < paragraphs.size(); i++) {
             XWPFParagraph para = paragraphs.get(i);
-            String style = para.getStyle();
-
-            if (style != null && getHeadingLevel(para, checkParams) != 0) {
-                if (i > 0 && !paragraphs.get(i - 1).getText().isEmpty()) {
-                    errorsList.addError(para.getText(), "errorNoEmptyLineBeforeHeading");
-                }
-                if (i < paragraphs.size() - 1 && !paragraphs.get(i + 1).getText().isEmpty()) {
-                    errorsList.addError(para.getText(), "errorNoEmptyLineAfterHeading");
-                }
-                if (getHeadingLevel(para, checkParams) == 1) {
-                    if (i > 0 && !paragraphs.get(i - 1).getText().isEmpty()) {
-                        errorsList.addError(para.getText(), "errorHeading1NotOnNewPage");
-                    }
-                    int linesAfter = 0;
-                    for (int j = i + 1; j < paragraphs.size(); j++) {
-                        if (paragraphs.get(j).getText().isEmpty()) break;
-                        linesAfter++;
-                    }
-                    if (linesAfter <= 1) {
-                        errorsList.addError(para.getText(), "errorNotEnoughTextAfterHeading1");
-                    }
-                }
-            }
-        }
-    }
-
-    private void checkHeadingOrder(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
-        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
-        int[] currentLevel = new int[]{0, 0, 0, 0};
-        for (XWPFParagraph para : paragraphs) {
-            int level = getHeadingLevel(para, checkParams);
-            if (level != 0) {
-                String text = para.getText().trim();
-                Pattern pattern = Pattern.compile("^(\\d+(\\.\\d+)*)\\s+.*");
-                Matcher matcher = pattern.matcher(text);
-                if (matcher.find()) {
-                    String[] numbers = matcher.group(1).split("\\.");
-                    for (int i = 0; i < numbers.length; i++) {
-                        int expected = currentLevel[i] + (i == level - 1 ? 1 : 0);
-                        int actual = Integer.parseInt(numbers[i]);
-                        if (actual != expected) {
-                            errorsList.addError(para.getText(), "errorIncorrectHeadingNumber");
+            if (getHeadingLevel(para, checkParams) == 1) {
+                if (i > 0) {
+                    XWPFParagraph prevPara = paragraphs.get(i - 1);
+                    boolean startsNewPage = false;
+                    CTSectPr prevSectPr = prevPara.getCTPPr().getSectPr();
+                    if (prevSectPr != null && prevSectPr.getType() != null) {
+                        String breakType = prevSectPr.getType().getVal().toString();
+                        if ("nextPage".equals(breakType)) {
+                            startsNewPage = true;
                         }
                     }
-                    currentLevel[level - 1]++;
-                    for (int i = level; i < 4; i++) {
-                        currentLevel[i] = 0;
+                    if (!startsNewPage) {
+                        errorsList.addError(para.getText(), "errorHeading1NotOnNewPage");
+                        if (!prevPara.getText().isEmpty()) {
+                            errorsList.addError(para.getText(), "errorNoEmptyLineBeforeHeading1");
+                        }
                     }
-                } else {
-                    errorsList.addError(para.getText(), "errorMissingHeadingNumber");
                 }
-            }
-        }
-    }
 
-    private void checkSectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
-        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
-        for (XWPFParagraph para : paragraphs) {
-            if (getHeadingLevel(para, checkParams) == 1) {
-                String text = para.getText().trim();
-                if (!text.equals(text.toUpperCase())) {
-                    errorsList.addError(text, "errorHeading1NotUppercase");
+                if (i < paragraphs.size() - 1 && !paragraphs.get(i + 1).getText().isEmpty()) {
+                    errorsList.addError(para.getText(), "errorNoEmptyLineAfterHeading1");
                 }
+
+                String text = para.getText().trim();
+
                 boolean isBold = false;
                 for (XWPFRun run : para.getRuns()) {
                     if (run.isBold()) {
@@ -165,11 +136,19 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                     errorsList.addError(text, "errorHeading1NotBold");
                 }
                 String alignment = para.getAlignment().toString();
-                if (!"CENTER".equals(alignment) && !"BOTH".equals(alignment)) {
+                if (!"CENTER".equals(alignment)) {
                     errorsList.addError(text, "errorHeading1IncorrectAlignment");
                 }
-                if (text.matches(".*\\d+\\..*") || text.endsWith(".")) {
-                    errorsList.addError(text, "errorHeading1HasPeriod");
+                if (!isStandardHeading(para, checkParams, errorsList) && !text.matches(LEVEL1_HEADING_PATTERN)) {   // "^(?!.*\\.$)([1-9]\\d*).*"
+                    if (text.endsWith(".")) {
+                        errorsList.addError(text, "errorHeading1HasPeriod");
+                    }
+                    if (!text.equals(text.toUpperCase())) {
+                        errorsList.addError(text, "errorHeading1NotUppercase");
+                    }
+                    else {
+                        errorsList.addError(text, "errorHeading1InvalidFormat");
+                    }
                 }
             }
         }
@@ -177,14 +156,38 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
 
     private void checkSubsectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
-        for (XWPFParagraph para : paragraphs) {
+        for (int i = 0; i < paragraphs.size(); i++) {
+            XWPFParagraph para = paragraphs.get(i);
             String style = para.getStyle();
-            if (style != null && getHeadingLevel(para, checkParams) >= 2 && getHeadingLevel(para, checkParams) <=4) {
-                String text = para.getText().trim();
-                Pattern pattern = Pattern.compile("^\\d+(\\.\\d+)*\\s+([A-Z][a-z\\s]+)$");
-                if (!pattern.matcher(text).matches()) {
-                    errorsList.addError(text, "errorSubheadingNotTitleCase");
+            int level = getHeadingLevel(para, checkParams);
+            if (style != null && level >= 2 && level <=4) {
+
+                if (level == 2) {
+                    if (i > 0 && !paragraphs.get(i - 1).getText().isEmpty()) {
+                        errorsList.addError(para.getText(), "errorNoEmptyLineBeforeHeading2");
+                    }
                 }
+
+                String text = para.getText().trim();
+
+                Pattern pattern = Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN);
+                Matcher matcher = pattern.matcher(text);
+                if (matcher.find()) {
+                    String[] numbers = matcher.group(1).split("\\.");
+                    int actual = numbers.length;
+
+                    if (actual != level) {
+                        errorsList.addError(para.getText(), "errorIncorrectActualHeadingLevel");
+                    }
+                }
+                if (!matcher.matches()) { // "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3}).*"
+                    if (text.endsWith(".")) {
+                        errorsList.addError(text, "errorSubheadingHasPeriod");
+                    } else {
+                        errorsList.addError(text, "errorSubheadingInvalidFormat");
+                    }
+                }
+
                 boolean isBold = false;
                 for (XWPFRun run : para.getRuns()) {
                     if (run.isBold()) {
@@ -197,9 +200,6 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                 }
                 if (!"BOTH".equals(para.getAlignment().toString())) {
                     errorsList.addError(text, "errorSubheadingIncorrectAlignment");
-                }
-                if (text.matches(".*\\d+\\..*") || text.endsWith(".")) {
-                    errorsList.addError(text, "errorSubheadingHasPeriod");
                 }
             }
         }
