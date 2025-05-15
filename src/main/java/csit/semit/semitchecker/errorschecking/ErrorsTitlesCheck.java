@@ -15,9 +15,15 @@ import java.util.stream.Collectors;
 import java.util.Comparator;
 
 public class ErrorsTitlesCheck implements IErrorsCheckable {
-    private static final String LEVEL1_HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*)\\s+([A-ZА-Я]+(\\.\\s+[A-ZА-Я]+)*)";
+//    private static final String LEVEL1_HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*)\\s+([A-ZА-Я]+(\\.\\s+[A-ZА-Я]+)*)";
+    private static final String LEVEL1_HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*)\\s+([A-ZА-Я[ЄЇІ]]+)(\\s+[A-ZА-Я[ЄЇІ]]+)*(\\.\\s+[A-ZА-Я[ЄЇІ]]+(\\s+[A-ZА-Я[ЄЇІ]]+)*)*";
+//    private static final String LEVEL2_TO_4_HEADING_PATTERN =
+//            "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s([A-ZА-Я][A-ZА-Яa-zа-я]*)(\\s+[A-ZА-Яa-zа-я]+)*(\\.\\s+[A-ZА-Я][A-ZА-Яa-zа-я]*(\\s+[A-ZА-Яa-zа-я]+)*)*";
     private static final String LEVEL2_TO_4_HEADING_PATTERN =
-            "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s+([A-ZА-Я][a-zа-я]*(\\.\\s+[A-ZА-Я][a-zа-я]*)*)";
+        "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s([A-ZА-Я[ЄЇІ]][A-ZА-Яa-zа-я[ЄЇІєїі']]*)(\\s+[A-ZА-Яa-zа-я[ЄЇІєїі']]+)*(\\.\\s+[A-ZА-Я[ЄЇІ]][A-ZА-Яa-zа-я[ЄЇІєїі']]*(\\s+[A-ZА-Яa-zа-я[ЄЇІєїі']]+)*)*";
+    private static final String LEVEL2_TO_4_HEADING_PATTERN_NUMBERS = "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s";
+    private static final String LEVEL2_TO_4_HEADING_PATTERN_WORDS = "\\s([A-ZА-Я][A-ZА-Яa-zа-я]*)(\\s+[A-ZА-Яa-zа-я]*)*(\\.\\s+[A-ZА-Я][A-ZА-Яa-zа-я]*(\\s+[A-ZА-Яa-zа-я]*)*)*$";
+
 
     // Допоміжний клас для зберігання інформації про заголовки
     record HeadingInfo(int index, String text, boolean isStandard, String number) {}
@@ -30,6 +36,29 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         checkSectionFormatting(xwpfDocument, checkParams, errorsList);
         checkSubsectionFormatting(xwpfDocument, checkParams, errorsList);
         return errorsList;
+    }
+
+    public static int getHeadingLevel(XWPFParagraph para, CheckParams checkParams) {
+        String style = para.getStyle(); // Get the style, which might be null
+        if (style == null) {
+            return 0;
+        }
+
+        ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord());
+        String heading1 = rb.getString("H1");
+        String heading2 = rb.getString("H2");
+        String heading3 = rb.getString("H3");
+        String heading4 = rb.getString("H4");
+
+        String[] headingStyles = {heading1, heading2, heading3, heading4};
+        int level = 1;
+        for (String s : headingStyles) {
+            if (para.getStyle().equals(s)) {
+                return level;
+            }
+            level++;
+        }
+        return 0;
     }
 
     private boolean isStandardHeading(XWPFParagraph para, CheckParams checkParams, ErrorsList errorsList) {
@@ -73,28 +102,187 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         }
     }
 
-    private int getHeadingLevel(XWPFParagraph para, CheckParams checkParams) {
-        String style = para.getStyle(); // Get the style, which might be null
-        if (style == null) {
-            return 0;
-        }
+    private void checkHeadingOrder(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
+        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+        List<String> standards = List.of(StandardHeadings.getAllHeadingsLocalized(checkParams));
+        int introIndex = -1;
+        int conclusionsIndex = -1;
+        List<HeadingInfo> headings = new ArrayList<>();
 
-        ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord());
-        String heading1 = rb.getString("H1");
-        String heading2 = rb.getString("H2");
-        String heading3 = rb.getString("H3");
-        String heading4 = rb.getString("H4");
+        // Збір інформації про всі заголовки
+        for (int i = 0; i < paragraphs.size(); i++) {
+            XWPFParagraph para = paragraphs.get(i);
+            String text = para.getText().trim().toUpperCase();
+            int level = getHeadingLevel(para, checkParams);
 
-        String[] headingStyles = {heading1, heading2, heading3, heading4};
-        int level = 1;
-        for (String s : headingStyles) {
-            if (para.getStyle().equals(s)) {
-                return level;
+            if (isStandardHeading(para, checkParams, errorsList)) {
+                if (text.equals(StandardHeadings.INTRODUCTION.getHeadingLocalized(checkParams).toUpperCase())) {
+                    introIndex = i;
+                } else if (text.equals(StandardHeadings.CONCLUSIONS.getHeadingLocalized(checkParams).toUpperCase())) {
+                    conclusionsIndex = i;
+                }
+                headings.add(new HeadingInfo(i, text, true, null));
+            } else if (level != 0) {
+                String number = extractHeadingNumber(para, level);
+                if (number != null) {
+                    headings.add(new HeadingInfo(i, text, false, number));
+                }
             }
-            level++;
         }
-        return 0;
+
+        // 1. Перевірка порядку стандартних заголовків
+        checkStandardHeadingOrder(headings, introIndex, conclusionsIndex, standards, errorsList, checkParams);
+
+        // 2. Перевірка порядку нестандартних заголовків
+        checkNonStandardHeadingOrder(headings, introIndex, conclusionsIndex, errorsList);
+
+        // 3. Перевірка перехрещення
+        checkHeadingIntersection(headings, introIndex, conclusionsIndex, errorsList, checkParams);
     }
+
+    private String extractHeadingNumber(XWPFParagraph para, int level) {
+        String text = para.getText().trim();
+        Pattern pattern = (level == 1) ? Pattern.compile(LEVEL1_HEADING_PATTERN) : Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN);
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            return matcher.group(1); // Номер заголовка (наприклад, "1" або "1.1.1")
+        }
+        return null;
+    }
+
+    private void checkStandardHeadingOrder(List<HeadingInfo> headings, int introIndex, int conclusionsIndex,
+                                           List<String> standards, ErrorsList errorsList, CheckParams checkParams) {
+        List<String> expectedBeforeIntroduction = standards.subList(0, standards.indexOf(StandardHeadings.INTRODUCTION.getHeadingLocalized(checkParams)));
+        List<String> expectedAfterConclusions = standards.subList(standards.indexOf(StandardHeadings.CONCLUSIONS.getHeadingLocalized(checkParams)) + 1, standards.size());
+        List<String> foundBeforeIntro = new ArrayList<>();
+        List<String> foundAfterConclusions = new ArrayList<>();
+
+        for (HeadingInfo heading : headings) {
+            if (heading.isStandard()) {
+                if (heading.index < introIndex || introIndex == -1) {
+                    foundBeforeIntro.add(heading.text());
+                } else if (heading.index > conclusionsIndex || conclusionsIndex == -1) {
+                    foundAfterConclusions.add(heading.text());
+                }
+            }
+        }
+
+        // Перевірка порядку до ВСТУП
+        for (int i = 0; i < foundBeforeIntro.size(); i++) {
+            if (i >= expectedBeforeIntroduction.size() || !foundBeforeIntro.get(i).equals(expectedBeforeIntroduction.get(i))) {
+                errorsList.addError(foundBeforeIntro.get(i), "errorStandardHeadingWrongPlaceBeforeIntro");
+            }
+        }
+
+        // Перевірка порядку після ВИСНОВКИ (крім додатків)
+        for (int i = 0; i < foundAfterConclusions.size(); i++) {
+            String foundHeading = foundAfterConclusions.get(i);
+            if (!foundHeading.startsWith(StandardHeadings.APPENDIX.getHeadingLocalized(checkParams).toUpperCase())) {
+                if (i >= expectedAfterConclusions.size() || !foundHeading.equals(expectedAfterConclusions.get(i))) {
+                    errorsList.addError(foundHeading, "errorStandardHeadingWrongPlaceAfterConclusions");
+                }
+            }
+        }
+
+        // Перевірка додатків
+//        List<String> appendices = foundAfterConclusions.stream()
+//                .filter(h -> h.startsWith(StandardHeadings.APPENDIX.getHeadingLocalized(checkParams).toUpperCase()))
+//                .collect(Collectors.toList());
+//        for (int i = 0; i < appendices.size(); i++) {
+//            String expectedAppendix = (StandardHeadings.APPENDIX.getHeadingLocalized(checkParams) + " " + (char) ('А' + i)).toUpperCase();
+//            if (!appendices.get(i).equals(expectedAppendix)) {
+//                errorsList.addError(appendices.get(i), "errorAppendixWrongOrder");
+//            }
+//        }
+
+        // Перевірка стандартних заголовків між ВСТУП і ВИСНОВКИ
+        for (HeadingInfo heading : headings) {
+            if (heading.isStandard() && heading.index > introIndex && heading.index < conclusionsIndex &&
+                    !heading.text().equals(StandardHeadings.INTRODUCTION.getHeadingLocalized(checkParams).toUpperCase()) &&
+                    !heading.text().equals(StandardHeadings.CONCLUSIONS.getHeadingLocalized(checkParams).toUpperCase())) {
+                errorsList.addError(heading.text(), "errorStandardHeadingBetweenIntroAndConclusions");
+            }
+        }
+    }
+
+    private void checkNonStandardHeadingOrder(List<HeadingInfo> headings, int introIndex, int conclusionsIndex,
+                                              ErrorsList errorsList) {
+        List<HeadingInfo> nonStandardHeadings = headings.stream()
+                .filter(h -> !h.isStandard() && h.number() != null)
+                .sorted(Comparator.comparingInt(HeadingInfo::index))
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < nonStandardHeadings.size(); i++) {
+            HeadingInfo current = nonStandardHeadings.get(i);
+            if (current.index < introIndex || current.index > conclusionsIndex) {
+                errorsList.addError(current.text(), "errorNonStandardHeadingOutsideIntroAndConclusions");
+                continue;
+            }
+
+            if (i > 0) {
+                HeadingInfo previous = nonStandardHeadings.get(i - 1);
+                if (!isValidHeadingSequence(previous.number(), current.number())) {
+                    errorsList.addError(current.text(), "errorNonStandardHeadingWrongOrder");
+                }
+            }
+        }
+    }
+
+    private boolean isValidHeadingSequence(String prevNumber, String currNumber) {
+        String[] prevParts = prevNumber.split("\\.");
+        String[] currParts = currNumber.split("\\.");
+
+        // Перевірка, чи поточний номер є продовженням попереднього
+        int minLength = Math.min(prevParts.length, currParts.length);
+        for (int i = 0; i < minLength; i++) {
+            int prevValue = Integer.parseInt(prevParts[i]);
+            int currValue = Integer.parseInt(currParts[i]);
+            if (currValue < prevValue) {
+                return false; // Номер не може зменшуватися на тому ж рівні
+            } else if (currValue > prevValue) {
+                // Новий рівень має починатися з 1 або продовжувати попередній рівень
+                if (i < prevParts.length - 1 || currParts.length <= prevParts.length) {
+                    return false; // Неправильне продовження (наприклад, 1.2 після 1.1.1)
+                }
+                if (currValue != prevValue + 1 && i == prevParts.length - 1) {
+                    return false; // Наступний рівень має бути на 1 більше (наприклад, 1.2 після 1.1)
+                }
+                break;
+            }
+        }
+
+        // Перевірка, чи поточний номер має більше рівнів, ніж попередній
+        if (currParts.length > prevParts.length) {
+            int lastPrev = Integer.parseInt(prevParts[prevParts.length - 1]);
+            int firstNew = Integer.parseInt(currParts[prevParts.length]);
+            return firstNew == 1; // Новий підрівень має починатися з 1 (наприклад, 1.1.1 після 1.1)
+        }
+
+        return true;
+    }
+
+    private void checkHeadingIntersection(List<HeadingInfo> headings, int introIndex, int conclusionsIndex,
+                                          ErrorsList errorsList, CheckParams checkParams) {
+        boolean inNonStandardSection = false;
+        for (HeadingInfo heading : headings) {
+            if (heading.isStandard()) {
+                String text = heading.text();
+                if (text.equals(StandardHeadings.INTRODUCTION.getHeadingLocalized(checkParams).toUpperCase())) {
+                    inNonStandardSection = true;
+                } else if (text.equals(StandardHeadings.CONCLUSIONS.getHeadingLocalized(checkParams).toUpperCase())) {
+                    inNonStandardSection = false;
+                } else if (inNonStandardSection && heading.index > introIndex && heading.index < conclusionsIndex) {
+                    errorsList.addError(text, "errorStandardHeadingBetweenIntroAndConclusions");
+                }
+            } else if (heading.number() != null) {
+                if (!inNonStandardSection && (introIndex != -1 && heading.index < introIndex) ||
+                        (conclusionsIndex != -1 && heading.index > conclusionsIndex)) {
+                    errorsList.addError(heading.text(), "errorNonStandardHeadingOutsideIntroAndConclusions");
+                }
+            }
+        }
+    }
+
 
     private void checkSectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
         List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
@@ -170,31 +358,21 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
 
                 String text = para.getText().trim();
 
-                Pattern pattern = Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN);
+                Pattern pattern = Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN, Pattern.UNICODE_CHARACTER_CLASS);
                 Matcher matcher = pattern.matcher(text);
-                if (matcher.find()) {
+                if (!matcher.matches()) {
+                    System.out.println("Failed pattern for: " + text + " with pattern: " + LEVEL2_TO_4_HEADING_PATTERN);
+                    errorsList.addError(text, "errorSubheadingInvalidFormat");
+                }
+                else {
                     String[] numbers = matcher.group(1).split("\\.");
-                    int actual = numbers.length;
-
-                    if (actual != level) {
+                    int actualLevel = numbers.length;
+                    if (actualLevel != level) {
                         errorsList.addError(para.getText(), "errorIncorrectActualHeadingLevel");
                     }
                 }
-                if (!matcher.matches()) { // "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3}).*"
-                    if (text.endsWith(".")) {
-                        errorsList.addError(text, "errorSubheadingHasPeriod");
-                    } else {
-                        errorsList.addError(text, "errorSubheadingInvalidFormat");
-                    }
-                }
 
-                boolean isBold = false;
-                for (XWPFRun run : para.getRuns()) {
-                    if (run.isBold()) {
-                        isBold = true;
-                        break;
-                    }
-                }
+                boolean isBold = para.getRuns().stream().anyMatch(XWPFRun::isBold);
                 if (!isBold) {
                     errorsList.addError(text, "errorSubheadingNotBold");
                 }
