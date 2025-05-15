@@ -20,6 +20,7 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
     private static final int MAX_LEFT_MARGIN_MM = 35;
     private static final int MIN_RIGHT_MARGIN_MM = 10; // праворуч
     private static final int MAX_RIGHT_MARGIN_MM = 15;
+    private static final double EPSILON = 1.0;
 
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
@@ -58,15 +59,18 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
             if (sectPr != null) {
                 CTPageSz pgSz = sectPr.getPgSz();
                 if (pgSz != null) {
-                    int width = ((Number) pgSz.getW()).intValue();
-                    int height = ((Number) pgSz.getH()).intValue();
+                    double width = ((Number) pgSz.getW()).doubleValue();
+                    double height = ((Number) pgSz.getH()).doubleValue();
+                    double expectedWidth = A4_WIDTH_MM * TWENTIETHS_PER_MM;
+                    double expectedHeight = A4_HEIGHT_MM * TWENTIETHS_PER_MM;
+
                     if (isLandscapeOrientation(sectPr)) {
-                        if (height != (int) (A4_WIDTH_MM * TWENTIETHS_PER_MM) || width != (int) (A4_HEIGHT_MM * TWENTIETHS_PER_MM)) {
+                        if (Math.abs(height - expectedWidth) > EPSILON || Math.abs(width - expectedHeight) > EPSILON) {
                             errorsList.addError("Section " + sectionNumber, "errorPageFormatIncorrect");
                         }
                     }
                     else {
-                        if (width != (int) (A4_WIDTH_MM * TWENTIETHS_PER_MM) || height != (int) (A4_HEIGHT_MM * TWENTIETHS_PER_MM)) {
+                        if (Math.abs(width - expectedWidth) > EPSILON || Math.abs(height - expectedHeight) > EPSILON) {
                             errorsList.addError("Section " + sectionNumber, "errorPageFormatIncorrect");
                         }
                     }
@@ -86,23 +90,25 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
                 if (pgSz != null) {
                     CTPageMar pgMar = sectPr.getPgMar();
                     if (pgMar != null) {
-                        int left = ((Number) pgMar.getLeft()).intValue();
-                        int right = ((Number) pgMar.getRight()).intValue();
-                        int top = ((Number) pgMar.getTop()).intValue();
-                        int bottom = ((Number) pgMar.getBottom()).intValue();
-                        int topBottom = (int) (TOP_BOTTOM_MARGIN_MM * TWENTIETHS_PER_MM);
-                        int minLeft = (int) (MIN_LEFT_MARGIN_MM * TWENTIETHS_PER_MM);
-                        int maxLeft = (int) (MAX_LEFT_MARGIN_MM * TWENTIETHS_PER_MM);
-                        int minRight = (int) (MIN_RIGHT_MARGIN_MM * TWENTIETHS_PER_MM);
-                        int maxRight = (int) (MAX_RIGHT_MARGIN_MM * TWENTIETHS_PER_MM);
+                        double left = ((Number) pgMar.getLeft()).doubleValue();
+                        double right = ((Number) pgMar.getRight()).doubleValue();
+                        double top = ((Number) pgMar.getTop()).doubleValue();
+                        double bottom = ((Number) pgMar.getBottom()).doubleValue();
+                        double topBottom = TOP_BOTTOM_MARGIN_MM * TWENTIETHS_PER_MM;
+                        double minLeft = MIN_LEFT_MARGIN_MM * TWENTIETHS_PER_MM;
+                        double maxLeft = MAX_LEFT_MARGIN_MM * TWENTIETHS_PER_MM;
+                        double minRight = MIN_RIGHT_MARGIN_MM * TWENTIETHS_PER_MM;
+                        double maxRight = MAX_RIGHT_MARGIN_MM * TWENTIETHS_PER_MM;
 
                         if (isLandscapeOrientation(sectPr)) {
-                            if (left != right || left != topBottom || top >= maxLeft || top <= minLeft || bottom >= maxRight || bottom <= minRight) {
+                            if (Math.abs(left - right) > EPSILON || Math.abs(left - topBottom) > EPSILON
+                                    || top > maxLeft || top < minLeft || bottom > maxRight || bottom < minRight) {
                                 errorsList.addError("Section " + sectionNumber, "errorIncorrectMargins");
                             }
                         }
                         else {
-                            if (top != topBottom || bottom != topBottom || left >= maxLeft || left <= minLeft || right >= maxRight || right <= minRight) {
+                            if (Math.abs(top - topBottom) > EPSILON || Math.abs(bottom - topBottom) > EPSILON
+                                    || left > maxLeft || left < minLeft || right > maxRight || right < minRight) {
                                 errorsList.addError("Section " + sectionNumber, "errorIncorrectMargins");
                             }
                         }
