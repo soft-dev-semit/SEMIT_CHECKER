@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
 
 public class FigureCheckTest {
     String docNameUaEn = "tables_figures_test_ua_en.docx";
-    String docNameUaUa = "tables_figures_test_ua_ua.docx";
+    String docNameUaUa = "tables_tables_test_ua_ua.docx";
+    //String docNameUaUa = "КП_АППЗ2_2025 Мелещук 2025_05_13.docx";
     String docNameEnEn = "tables_figures_test_en_en.docx";
     String docNameEnUa = "tables_figures_test_en_ua.docx";
 
