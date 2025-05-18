@@ -8,8 +8,6 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigInteger;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -58,7 +56,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
         //Детальна перевірка переліку
         int startParagrph = 0;
-        ErrorsPerelikiCheck.Perelik p = null;
+        ErrorsPerelikiCheck.Perelik p;
         do {
             //Find perelik
             p = errPerCheck.foundPerelik(pt, startParagrph, xwpfDocument, checkParams.getLocaleWord());
@@ -96,7 +94,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
     //1)	Знайти перелік
     //Результат - перелік абзаців, що утворюють перелік
     @Getter
-    public class Perelik {
+    public static class Perelik {
         //Тип переліку
         private PerelikType perelikType;
         private String perelikPlace;
@@ -173,33 +171,33 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         return sentences.length;
     }
 
-    //Метод для пошуку параграфів Numeric1
-    //В него входит набор параграфов до наступного параграфу типу Numeric1 з ознакою нумерації Продовжити
-    public XWPFParagraph findNumericOneItem(List<XWPFParagraph> xwpfParagraphs, int startPos) {
-        XWPFParagraph numericOneItem = xwpfParagraphs.get(startPos);
-        int countP = 1;
-//        do {
+//    //Метод для пошуку параграфів Numeric1
+//    //В него входит набор параграфов до наступного параграфу типу Numeric1 з ознакою нумерації Продовжити
+//    public XWPFParagraph findNumericOneItem(List<XWPFParagraph> xwpfParagraphs, int startPos) {
+//        XWPFParagraph numericOneItem = xwpfParagraphs.get(startPos);
+//        int countP = 1;
+////        do {
+////
+////        } while
+////        for (int i = startPos+1, pNumber = xwpfParagraphs.size(); i < pNumber; i++) {
+////            XWPFParagraph paragraph = xwpfParagraphs.get(i);
+////            if (paragraph.getStyle() != null && !paragraph.getStyle().equals(PerelikType.ListNumeric1)) {
+////                //Якщо знайдене форматування переліку ListNumeric1, то це наступний пункт
+////                if (posStartList == -1) {
+////                    posStartList = i;
+////                }
+////                //Якщо не початок - то збільшується кількість рядків переліку
+////                listSize++;
+////            } else {
+////                //Якщо це параграф, після переліку, то  потрібна структура (перелік) сформована
+////                if (posStartList != -1) {
+////                    break;
+////                }
+////            }
+////        }
 //
-//        } while
-//        for (int i = startPos+1, pNumber = xwpfParagraphs.size(); i < pNumber; i++) {
-//            XWPFParagraph paragraph = xwpfParagraphs.get(i);
-//            if (paragraph.getStyle() != null && !paragraph.getStyle().equals(PerelikType.ListNumeric1)) {
-//                //Якщо знайдене форматування переліку ListNumeric1, то це наступний пункт
-//                if (posStartList == -1) {
-//                    posStartList = i;
-//                }
-//                //Якщо не початок - то збільшується кількість рядків переліку
-//                listSize++;
-//            } else {
-//                //Якщо це параграф, після переліку, то  потрібна структура (перелік) сформована
-//                if (posStartList != -1) {
-//                    break;
-//                }
-//            }
-//        }
-
-        return this.joinParagraphs(xwpfParagraphs, startPos, countP);
-    }
+//        return this.joinParagraphs(xwpfParagraphs, startPos, countP);
+//    }
 
     //Метод, що відшукує перелік типу pt  у документі xwpfDocument, починаючи з заданого абзацу startPos
     //Тобто метод готовий для пошуку переліку довільного типу
@@ -231,10 +229,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
                 resFirst = new Perelik();
                 resFirst.perelikType = pt;
                 //Додати рядок, що йде перед переліком (якщо є)
-                if ((posStartList - 1) > -1) {
-                    resFirst.paragraphBefore = xwpfParagraphs.get(posStartList - 1);
-//                    System.out.println("resFirst.paragraphBefore: " + resFirst.paragraphBefore.getText());
-                }
+                resFirst.paragraphBefore = xwpfParagraphs.get(posStartList - 1);
                 //Додати рядок, що йде після переліку (якщо є)
                 if (posStartList + listSize < xwpfParagraphs.size()) {
                     resFirst.paragraphAfter = xwpfParagraphs.get(posStartList + listSize);
@@ -390,7 +385,8 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         XWPFParagraph paragraphLast = listParagraphs.get(listParagraphs.size() - 1);
         if (!paragraphLast.getText().trim().endsWith(".")) {
             //В багаторівневих переліках останній символ може бути не ".", якщо далі йде пункт переліку не Numeric1
-            if (!((isPerelik(parAfter) != null) && !isPerelik(parAfter).equals(PerelikType.ListNumeric1) && paragraphLast.getText().trim().endsWith(";"))) {
+            if (!((isPerelik(parAfter) != null) && !isPerelik(parAfter).equals(PerelikType.ListNumeric1)
+                    && (paragraphLast.getText().trim().endsWith(";") || paragraphLast.getText().trim().endsWith(":")))) {
                 //Або в багаторівневому переліку останній символ може бути не ".", якщо далі йде пункт переліку не Numeric1 або Numeric1)
                 if (!((isPerelik(parAfter) != null) &&
                         !(isPerelik(parAfter).equals(PerelikType.ListNumeric1) || isPerelik(parAfter).equals(PerelikType.ListNumericWithBracket))
@@ -442,18 +438,18 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         boolean badCountListItem = true;
         for (int i=0; i<perelik.perelikItems.size();i++) {
             XWPFParagraph par = perelik.perelikItems.get(i);
-            int countS = 0;
+            int countS;
             if (par.getText() != null && par.getStyle() != null) {
                 if (par.getStyle().equals(PerelikType.ListNumeric1.name())) {
                     countS = ErrorsPerelikiCheck.countSentences(par.getText());
                     if (countS == 1) {
-                            badCountNumericOne = badCountNumericOne && false;
+                            badCountNumericOne = false;
                     }
                 } else {
                     // iнші типи переліків - по одному
                     countS = ErrorsPerelikiCheck.countSentences(par.getText());
                     if (countS > 1) {
-                        badCountListItem = badCountListItem && false;
+                        badCountListItem = false;
                     }
                 }
             }
