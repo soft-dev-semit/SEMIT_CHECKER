@@ -40,8 +40,11 @@ public class ErrorProcessingTest {
 //    String docName = "Test-file-pereliki_en_EN.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
 //    String docName = "КР_МногоПомилок_ua_UA.docx";
-//    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13.docx";
-    String docName = "Шаталова_Blue.docx";
+//    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13дд.docx";
+//    String docName = "Шаталова_Blue.docx";
+//    String docName = "ExplNote_TEST.docx";
+    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13дд.docx";
+//    String docName = "Шаталова_Blue.docx";
 
 
     @BeforeEach
@@ -54,7 +57,9 @@ public class ErrorProcessingTest {
                 "resourcesbundles/errorstexts/pereliki",
                 "resourcesbundles/errorstexts/table",
                 "resourcesbundles/errorstexts/figure",
-                "resourcesbundles/errorstexts/boundaries"); // без ".properties"
+                "resourcesbundles.errorstexts.titles",
+                "resourcesbundles.errorstexts.layout",
+                "resourcesbundles.errorstexts.text" ); // без ".properties"
         messageSource.setDefaultEncoding("UTF-8");
 
         errorMessageGetter = new ErrorMessageGetter(messageSource);
@@ -63,14 +68,17 @@ public class ErrorProcessingTest {
         path = Paths.get(docName);
         //Яка мова інтерфейсу була встановлену у MircosoftWord на компютері виконавця? Реалізовані RU, UA, EN
         localeWord = Locale.forLanguageTag("uk_UA".replace("_", "-"));
+//        localeWord = Locale.forLanguageTag("en".replace("_", "-"));
         Locale localeWordNorm = MultiLang.getMultiLangByLocale(localeWord).getLocale();
 //        localeWord = MultiLang.UA.getLocale();
         //На якій мові документ? Може бути тільки дві
         localeDoc = Locale.forLanguageTag("uk_UA".replace("_", "-"));
+//        localeDoc = Locale.forLanguageTag("en".replace("_", "-"));
         Locale localeDocNorm = Lang.getLangByLocale(localeDoc).getLocale();
 //        localeDoc = Lang.UA.getLocale();
         //На якій мові показати помилки? Може бути тільки дві
         localeInterface = Lang.UA.getLocale();
+//        localeInterface = Lang.EN.getLocale();
         //Створююється об`єкт із локалями для передачі в блок перевірки
         checkParams = new CheckParams(localeWordNorm, localeDocNorm, localeInterface);
     }

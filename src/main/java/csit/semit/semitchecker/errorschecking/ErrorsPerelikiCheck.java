@@ -15,8 +15,6 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
-//        System.out.println("CHECKING......  " + typeErrors);
-
         //Створюєтся перелік для зберігання помилок
 //        ErrorsPerelikiCheck errPerCheck = new ErrorsPerelikiCheck();
 //        System.out.println("\nПОМИЛКИ ПЕРЕВІРКИ ПЕРЕЛІКІВ: "+typeErrors);
@@ -79,20 +77,6 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         return errorsList;
     }
 
-    //Методи для аналізу всіх переліків:
-    //Атрибутом для кожного з них буде
-    //1)	Знайти перелік;
-    //2)	Знайти речення перед переліком;
-    //3)	Знайти непусте речення перед переліком;
-    //4)	Знайти речення після переліку;
-    //5)	Знайти непустий абзац речення
-    //6) перевірити параметри абзацу на відповідність.
-    //Може тоді й шукати все відразу! Абзаци, які утворюють перелік,
-    // а від першого та останнього пункту переліку шукати вже параграфи до та після
-
-
-    //1)	Знайти перелік
-    //Результат - перелік абзаців, що утворюють перелік
     @Getter
     public static class Perelik {
         //Тип переліку
@@ -302,7 +286,7 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         //Відсікається з даної перевірки перелік у "Список джерел інформації"
         //Його перевірка буде реалізована окремо.
         //Загрузити локацію та назви стилів заголовків
-        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleWord());
+        ResourceBundle bundle = ResourceBundle.getBundle("resourcesbundles.docskeywords.docskeywords", checkParams.getLocaleDoc());
         String litra = bundle.getString("litra");
         if (perelik.getPerelikPlace().toUpperCase().startsWith(litra)) {
             //Якщо місце цього переліку в секції із джерелами, то просто вийти із нульовим переліком помилок
