@@ -169,33 +169,33 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
         return sentences.length;
     }
 
-//    //Метод для пошуку параграфів Numeric1
-//    //В него входит набор параграфов до наступного параграфу типу Numeric1 з ознакою нумерації Продовжити
-//    public XWPFParagraph findNumericOneItem(List<XWPFParagraph> xwpfParagraphs, int startPos) {
-//        XWPFParagraph numericOneItem = xwpfParagraphs.get(startPos);
-//        int countP = 1;
-////        do {
-////
-////        } while
-////        for (int i = startPos+1, pNumber = xwpfParagraphs.size(); i < pNumber; i++) {
-////            XWPFParagraph paragraph = xwpfParagraphs.get(i);
-////            if (paragraph.getStyle() != null && !paragraph.getStyle().equals(PerelikType.ListNumeric1)) {
-////                //Якщо знайдене форматування переліку ListNumeric1, то це наступний пункт
-////                if (posStartList == -1) {
-////                    posStartList = i;
-////                }
-////                //Якщо не початок - то збільшується кількість рядків переліку
-////                listSize++;
-////            } else {
-////                //Якщо це параграф, після переліку, то  потрібна структура (перелік) сформована
-////                if (posStartList != -1) {
-////                    break;
-////                }
-////            }
-////        }
+    //Метод для пошуку параграфів Numeric1
+    //В него входит набор параграфов до наступного параграфу типу Numeric1 з ознакою нумерації Продовжити
+    public XWPFParagraph findNumericOneItem(List<XWPFParagraph> xwpfParagraphs, int startPos) {
+        XWPFParagraph numericOneItem = xwpfParagraphs.get(startPos);
+        int countP = 1;
+//        do {
 //
-//        return this.joinParagraphs(xwpfParagraphs, startPos, countP);
-//    }
+//        } while
+//        for (int i = startPos+1, pNumber = xwpfParagraphs.size(); i < pNumber; i++) {
+//            XWPFParagraph paragraph = xwpfParagraphs.get(i);
+//            if (paragraph.getStyle() != null && !paragraph.getStyle().equals(PerelikType.ListNumeric1)) {
+//                //Якщо знайдене форматування переліку ListNumeric1, то це наступний пункт
+//                if (posStartList == -1) {
+//                    posStartList = i;
+//                }
+//                //Якщо не початок - то збільшується кількість рядків переліку
+//                listSize++;
+//            } else {
+//                //Якщо це параграф, після переліку, то  потрібна структура (перелік) сформована
+//                if (posStartList != -1) {
+//                    break;
+//                }
+//            }
+//        }
+
+        return this.joinParagraphs(xwpfParagraphs, startPos, countP);
+    }
 
     //Метод, що відшукує перелік типу pt  у документі xwpfDocument, починаючи з заданого абзацу startPos
     //Тобто метод готовий для пошуку переліку довільного типу
