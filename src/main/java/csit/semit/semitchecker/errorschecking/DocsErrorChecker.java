@@ -37,10 +37,13 @@ public class DocsErrorChecker {
 
     private List<IErrorsCheckable> createChecksList() {
         List<IErrorsCheckable> listCh = new ArrayList<>();
-        listCh.add(new ErrorsBoundariesCheck());
-        listCh.add(new ErrorsPerelikiCheck());
-        listCh.add(new ErrorsTablesCheck());
+        //TODO - шукати весь перелік класів-перевірок
+//        listCh.add(new ErrorsLayoutCheck());
+//        listCh.add(new ErrorsTextCheck());
+//        listCh.add(new ErrorsTitlesCheck());
         listCh.add(new ErrorsFiguresCheck());
+        listCh.add(new ErrorsTablesCheck());
+        listCh.add(new ErrorsPerelikiCheck());
         return listCh;
     }
 
@@ -50,6 +53,7 @@ public class DocsErrorChecker {
             int left = "Errors".length();
             int right = className.lastIndexOf("Check");
             String typeCheck = className.substring(left,right);
+            System.out.println("CHECKING......  " + typeCheck);
             ErrorsList resCheckType = check.check(document,checkParams,typeCheck);
             if ((resCheckType!=null)&&(!resCheckType.getErrors().isEmpty())) {
                 checksResults.add(resCheckType);
@@ -64,11 +68,6 @@ public class DocsErrorChecker {
             checksResults = new ArrayList<>();
         }
         //list errors 1
-        ErrorsList elBoundaries = new ErrorsList(localeWord,localeDoc,"Boundaries");
-        elBoundaries.addError("Нема заголовку","BND001");
-        elBoundaries.addError("Нема заголовку","BND002");
-        checksResults.add(elBoundaries);
-        //list errors 2
         ErrorsList elPereliki = new ErrorsList(localeWord,localeDoc,"Pereliki");
         elPereliki.addError("1.2 Маркірований перелік мі... : \"... єдиний пункт переліку.\"", "pereliki.list.only_one_item");
         elPereliki.addError("1.4 Маркірований перелік, я... : \"... пункт помилкового переліку 1.\"", "pereliki.items.nonormal_middle_item");
@@ -78,18 +77,5 @@ public class DocsErrorChecker {
         elPereliki.addError("2.5 Нумерований перелік із ... : \"... пункт помилкового переліку 1;\"", "pereliki.list.last_item_nonormal");
         checksResults.add(elPereliki);
     }
-
-// Old version
-//    public void checkDoc() {
-//        List<ErrorsList> newRes = new ArrayList<>();
-//        for (IErrorsCheckable check : checksToRun) {
-//            String className = check.getClass().getSimpleName();
-//            int left = "Errors".length();
-//            int right = className.lastIndexOf("Check");
-//            String typeCheck = className.substring(left,right);
-//            newRes.add(check.check(document,checkParams,typeCheck));
-//        }
-//    }
-
 
 }

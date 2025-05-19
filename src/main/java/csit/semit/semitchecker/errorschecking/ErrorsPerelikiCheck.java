@@ -15,8 +15,6 @@ public class ErrorsPerelikiCheck implements IErrorsCheckable {
 
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
-//        System.out.println("CHECKING......  " + typeErrors);
-
         //Створюєтся перелік для зберігання помилок
 //        ErrorsPerelikiCheck errPerCheck = new ErrorsPerelikiCheck();
 //        System.out.println("\nПОМИЛКИ ПЕРЕВІРКИ ПЕРЕЛІКІВ: "+typeErrors);
