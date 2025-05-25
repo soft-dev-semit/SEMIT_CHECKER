@@ -11,8 +11,8 @@ import java.nio.file.Paths;
 import java.util.Locale;
 
 public class TitlesCheckTest {
-    private String enDoc = "titles_layout_text_en.docx";
-    private String uaDoc = "titles_layout_text_ua.docx";
+    private String enDoc = "DRB_test_ua_EN.docx";
+    private String uaDoc = "DRB_test_ua_UA.docx";
 
     @Test
     void testCheckTitleNamesEn() throws IOException {

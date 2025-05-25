@@ -14,16 +14,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ErrorsTitlesCheck implements IErrorsCheckable {
-    private static final String LEVEL1_HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*)\\s+([A-ZА-Я[ЄЇІҐ]]+)(\\s+[A-ZА-Я[ЄЇІҐ]]+)*(\\.\\s+[A-ZА-Я[ЄЇІҐ]]+(\\s+[A-ZА-Я[ЄЇІҐ]]+)*)*";
-
-    private static final String LEVEL2_TO_4_HEADING_PATTERN =
-        "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){1,3})\\s([A-ZА-Я[ЄЇІҐ]][A-ZА-Яa-zа-я[ЄЇІҐєїіґ'\\-]]*)(\\s+[A-ZА-Яa-zа-я[ЄЇІҐєїіґ'\\-]]+)*(\\.\\s+[A-ZА-Я[ЄЇІҐ]][A-ZА-Яa-zа-я[ЄЇІҐєїіґ'\\-]]*(\\s+[A-ZА-Яa-zа-я[ЄЇІҐєїіґ'\\-]]+)*)*";
+    private static final String HEADING_PATTERN = "^(?!.*\\.$)([1-9]\\d*(\\.[1-9]\\d*){0,3})\\s.+";
+    private static final String WRONG_HEADING_PATTERN = "^((\\d+\\.)+)\\s.+";
 
     private static final int REQUIRED_SPACING_BEFORE_AFTER = 21 * 20; // 21 пт у twips (1 пт = 20 twips)
-
-    private static final Set<String> BUILT_IN_STYLES = new HashSet<>(Arrays.asList(
-            "Normal", "Heading1", "Heading2", "Heading3", "Heading4"
-    ));
 
     // Допоміжний клас для зберігання інформації про заголовки
     record HeadingInfo(int index, String text, boolean isStandard, String number) {}
@@ -31,37 +25,12 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
     @Override
     public ErrorsList check(XWPFDocument xwpfDocument, CheckParams checkParams, String typeErrors) {
         ErrorsList errorsList = new ErrorsList(checkParams.getLocaleWord(), checkParams.getLocaleDoc(), typeErrors);
-        checkRequiredSections(xwpfDocument, checkParams, errorsList);
-        checkHeadingOrder(xwpfDocument, checkParams, errorsList);
         checkSectionFormatting(xwpfDocument, checkParams, errorsList);
-        checkSubsectionFormatting(xwpfDocument, checkParams, errorsList);
+        if (errorsList.getErrors().size() == 0) {
+            checkHeadingOrder(xwpfDocument, checkParams, errorsList);
+        }
+        checkRequiredSections(xwpfDocument, checkParams, errorsList);
         return errorsList;
-    }
-
-    /**
-     * Перевіряє, чи використовує абзац користувацький стиль.
-     * @return true, якщо стиль користувацький, false, якщо вбудований або стилю немає.
-     */
-    public boolean isCustomStyle(XWPFParagraph para, XWPFDocument document) {
-        String styleId = para.getStyle();
-        if (styleId == null) {
-            return false; // Абзац без стилю
-        }
-        XWPFStyles styles = document.getStyles();
-        XWPFStyle style = styles.getStyle(styleId);
-        if (style == null) {
-            return false; // Стиль не знайдено
-        }
-        CTStyle ctStyle = style.getCTStyle();
-        // Перевірка атрибута customStyle
-        boolean isCustom = ctStyle != null && ctStyle.isSetCustomStyle() && Boolean.TRUE.equals(ctStyle.getCustomStyle());
-        // Якщо customStyle не встановлено, перевіряємо, чи стиль не є вбудованим
-        if (!isCustom) {
-            isCustom = !BUILT_IN_STYLES.contains(style.getStyleId()) && !BUILT_IN_STYLES.contains(style.getName());
-        }
-        System.out.println("Paragraph: " + para.getText() + ", Style ID: " + styleId +
-                ", Name: " + style.getName() + ", Is Custom: " + isCustom);
-        return isCustom;
     }
 
     public static int getHeadingLevel(XWPFParagraph para, CheckParams checkParams) {
@@ -90,7 +59,6 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
     private boolean isStandardHeading(XWPFParagraph para, CheckParams checkParams, ErrorsList errorsList) {
         boolean isStandardHeading = false;
         String text = para.getText().trim();
-        String effectiveText = getEffectiveText(para);
 
         // Перевіряємо чи це стандартний заголовок (ВСТУП, ВИСНОВКИ тощо)
         for (StandardHeadings heading : StandardHeadings.values()) {
@@ -99,149 +67,21 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
             // Порівнюємо без урахування регістру
             if (text.equalsIgnoreCase(localizedHeading)) {
                 isStandardHeading = true;
-                // Перевіряємо чи текст у верхньому регістрі
-                if (!effectiveText.equals(effectiveText.toUpperCase())) {
-
-                    errorsList.addError(effectiveText, "errorStandardHeadingNotUppercase");
-                }
                 break;
             }
 
             // Спеціальна перевірка для ДОДАТКІВ
             if (text.toUpperCase().startsWith(StandardHeadings.APPENDIX.getHeadingLocalized(checkParams).toUpperCase())) {
                 isStandardHeading = true;
-                if (!effectiveText.equals(effectiveText.toUpperCase())) {
-                    errorsList.addError(effectiveText, "errorStandardHeadingNotUppercase");
-                }
                 break;
             }
         }
 
         // Повертаємо true тільки якщо це стандартний заголовок і має стиль Heading 1
-        ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles");
+        ResourceBundle rb = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord());
         String heading1 = rb.getString("H1");
         return para.getStyle() != null && para.getStyle().equals(heading1) && isStandardHeading;
     }
-
-    // Допоміжний метод для визначення "ефективного" тексту з урахуванням стилів
-    private String getEffectiveText(XWPFParagraph para) {
-        if (para == null || para.getText() == null) {
-            return "";
-        }
-
-        String text = para.getText();
-        XWPFDocument document = para.getDocument();
-        boolean isCustom = isCustomStyle(para, document);
-
-        if (isCustom) {
-            // Визначаємо регістр зі стилю
-            String styleId = para.getStyle();
-            if (styleId != null) {
-                XWPFStyles styles = document.getStyles();
-                XWPFStyle style = styles.getStyle(styleId);
-                if (style != null && style.getCTStyle() != null) {
-                    CTRPr rPr = style.getCTStyle().getRPr();
-                    if (rPr != null) {
-                        // Перевірка smallCaps
-                        CTOnOff[] smallCapsArray = rPr.getSmallCapsArray();
-                        if (smallCapsArray != null && smallCapsArray.length > 0 && smallCapsArray[0].getVal() != null && "on".equalsIgnoreCase(smallCapsArray[0].getVal().toString())) {
-                            return text.toLowerCase();
-                        }
-                        // Перевірка caps
-                        CTOnOff[] capsArray = rPr.getCapsArray();
-                        if (capsArray != null && capsArray.length > 0 && capsArray[0].getVal() != null && "on".equalsIgnoreCase(capsArray[0].getVal().toString())) {
-                            return text.toUpperCase();
-                        }
-                    }
-                }
-            }
-        } else {
-            // Визначаємо регістр із властивостей параграфа
-            for (XWPFRun run : para.getRuns()) {
-                CTRPr rPr = run.getCTR().getRPr();
-                if (rPr != null) {
-                    // Перевірка smallCaps
-                    CTOnOff[] smallCapsArray = rPr.getSmallCapsArray();
-                    if (smallCapsArray != null && smallCapsArray.length > 0 && smallCapsArray[0].getVal() != null && "on".equalsIgnoreCase(smallCapsArray[0].getVal().toString())) {
-                        return text.toLowerCase();
-                    }
-                    // Перевірка caps
-                    CTOnOff[] capsArray = rPr.getCapsArray();
-                    if (capsArray != null && capsArray.length > 0 && capsArray[0].getVal() != null && "on".equalsIgnoreCase(capsArray[0].getVal().toString())) {
-                        return text.toUpperCase();
-                    }
-                }
-            }
-        }
-
-        // Якщо немає спеціальних налаштувань регістру, повертаємо текст як є
-        return text;
-    }
-//    private String getEffectiveText(XWPFParagraph para) {
-//        // Отримуємо "сирий" текст абзацу
-//        String text = para.getText().trim();
-//        if (text.isEmpty()) {
-//            return text;
-//        }
-//
-//        // Перевіряємо, чи текст уже повністю у верхньому регістрі
-//        boolean isTextUpperCase = text.equals(text.toUpperCase());
-//
-//        // Якщо текст уже великими літерами, повертаємо його без змін
-//        if (isTextUpperCase) {
-//            return text;
-//        }
-//
-//        // Перевіряємо пряме форматування на рівні runs
-//        boolean allRunsAreCaps = !para.getRuns().isEmpty();
-//        for (XWPFRun run : para.getRuns()) {
-//            if (run.getText(0) == null || run.getText(0).trim().isEmpty()) {
-//                continue; // Пропускаємо порожні run
-//            }
-//            CTRPr rPr = run.getCTR().getRPr();
-//            boolean runIsCaps = false;
-//            if (rPr != null) {
-//                CTOnOff[] capsArray = rPr.getCapsArray();
-//                if (capsArray != null && capsArray.length > 0) {
-//                    // Перевірка значення CAPS
-//                    Object val = capsArray[0].getVal();
-//                    runIsCaps = val == null || // null означає true за замовчуванням
-//                            (val instanceof Boolean && (Boolean) val) ||
-//                            (val instanceof String && ("true".equalsIgnoreCase((String) val) || "1".equals((String) val)));
-//                }
-//            }
-//            allRunsAreCaps &= runIsCaps;
-//        }
-//
-//        // Якщо всі runs мають форматування CAPS, повертаємо текст у верхньому регістрі
-//        if (allRunsAreCaps) {
-//            return text.toUpperCase();
-//        }
-//
-//        // Перевіряємо форматування на рівні стилю
-//        if (para.getStyle() != null) {
-//            XWPFStyle xwpfStyle = para.getDocument().getStyles().getStyle(para.getStyle());
-//            if (xwpfStyle != null && xwpfStyle.getCTStyle() != null) {
-//                CTStyle style = xwpfStyle.getCTStyle();
-//                if (style.getRPr() != null) {
-//                    CTOnOff[] capsArray = style.getRPr().getCapsArray();
-//                    if (capsArray != null && capsArray.length > 0) {
-//                        // Перевірка значення CAPS у стилі
-//                        Object val = capsArray[0].getVal();
-//                        boolean styleIsCaps = val == null ||
-//                                (val instanceof Boolean && (Boolean) val) ||
-//                                (val instanceof String && ("true".equalsIgnoreCase((String) val) || "1".equals((String) val)));
-//                        if (styleIsCaps) {
-//                            return text.toUpperCase();
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Якщо немає форматування CAPS і текст не є верхнім регістром, повертаємо оригінальний текст
-//        return text;
-//    }
 
     private void checkRequiredSections(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
         List<XWPFParagraph> paragraphList = xwpfDocument.getParagraphs();
@@ -277,12 +117,8 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         for (int i = 0; i < paragraphList.size(); i++) {
             XWPFParagraph para = paragraphList.get(i);
             int level = getHeadingLevel(para, checkParams);
+            String text = para.getText().trim();
             if (level == 1) {
-//                System.out.println("Checking Heading 1: " + para.getText());
-                // Отримуємо ефективний текст, який враховує форматування ALL CAPS
-                String text = getEffectiveText(para).trim();
-//                System.out.println("Effective text: '" + text + "'");
-
                 // Перевірка розриву розділу (з нової сторінки)
                 if (i > 0) {
                     boolean startsNewPage = checkSectionBreak(para, paragraphList, i, xwpfDocument);
@@ -310,81 +146,46 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                     }
                 }
 
-                // Перевірка жирності
-                boolean isBold = isParagraphBold(para);
-                if (!isBold) {
-                    errorsList.addError(text, "errorHeading1NotBold");
-                }
 
-                // Перевірка вирівнювання
-                String alignment = getEffectiveAlignment(para, checkParams);
-                if (!"CENTER".equals(alignment)) {
-                    errorsList.addError(text, "errorHeading1IncorrectAlignment");
-                }
+            }
 
-                // Перевірка верхнього регістру та формату заголовка
+            if (level == 2) {
+                XWPFParagraph prevPara = paragraphList.get(i - 1);
+                if (prevPara.getCTP().getPPr() != null && prevPara.getCTP().getPPr().getSpacing() != null) {
+                    CTSpacing spacing = prevPara.getCTP().getPPr().getSpacing();
+                    Object afterObj = spacing.getAfter();
+                    BigInteger after = (afterObj instanceof BigInteger) ? (BigInteger) afterObj : null;
+                }
+                if (!hasRequiredSpacingBefore(prevPara)) {
+                    errorsList.addError(text, "errorNoEmptyLineBeforeHeading2");
+                }
+            }
+
+            if (level != 0) {
+                // Перевірка формату заголовка
                 if (!isStandardHeading(para, checkParams, errorsList)) {
-                    // Перевіряємо формат за допомогою регулярного виразу
-                    Pattern pattern = Pattern.compile(LEVEL1_HEADING_PATTERN, Pattern.UNICODE_CHARACTER_CLASS);
+                    Pattern pattern = Pattern.compile(HEADING_PATTERN);
                     Matcher matcher = pattern.matcher(text);
                     if (!matcher.matches()) {
                         if (text.endsWith(".")) {
-                            errorsList.addError(text, "errorHeading1HasPeriod");
+                            errorsList.addError(text, "errorHeadingHasPeriodInTheEnd");
                         }
-                        // Перевірка на верхній регістр
-                        if (!text.equals(text.toUpperCase())) {
-                            errorsList.addError(text, "errorHeading1NotUppercase");
+
+                        Pattern wrongPattern = Pattern.compile(WRONG_HEADING_PATTERN);
+                        Matcher wrongMatcher = wrongPattern.matcher(text);
+                        if (wrongMatcher.matches() && matcher.group(1).endsWith(".")) {
+                            errorsList.addError(text, "errorHeadingHasPeriodAfterNumber");
                         } else {
-                            errorsList.addError(text, "errorHeading1InvalidFormat");
+                            errorsList.addError(text, "errorHeadingInvalidFormat");
                         }
                     }
-                }
-            }
-        }
-    }
-
-    private void checkSubsectionFormatting(XWPFDocument xwpfDocument, CheckParams checkParams, ErrorsList errorsList) {
-        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
-        Pattern pattern = Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN, Pattern.UNICODE_CHARACTER_CLASS);
-
-        for (int i = 0; i < paragraphs.size(); i++) {
-            XWPFParagraph para = paragraphs.get(i);
-            String style = para.getStyle();
-            int level = getHeadingLevel(para, checkParams);
-            if (style != null && level >= 2 && level <= 4) {
-                if (level == 2 && i > 0) {
-                    XWPFParagraph prevPara = paragraphs.get(i - 1);
-                    if (prevPara.getCTP().getPPr() != null && prevPara.getCTP().getPPr().getSpacing() != null) {
-                        CTSpacing spacing = prevPara.getCTP().getPPr().getSpacing();
-                        Object afterObj = spacing.getAfter();
-                        BigInteger after = (afterObj instanceof BigInteger) ? (BigInteger) afterObj : null;
+                    else {
+                        String[] numbers = matcher.group(1).split("\\.");
+                        int actualLevel = numbers.length;
+                        if (actualLevel != level) {
+                            errorsList.addError(text.toUpperCase(), "errorIncorrectActualHeadingLevel");
+                        }
                     }
-                    if (!hasRequiredSpacingBefore(prevPara)) {
-                        String effectiveText = getEffectiveText(para);
-                        errorsList.addError(effectiveText.toUpperCase(), "errorNoEmptyLineBeforeHeading2");
-                    }
-                }
-
-                String text = para.getText().trim();
-                Matcher matcher = pattern.matcher(text);
-                if (!matcher.matches()) {
-                    errorsList.addError(text.toUpperCase(), "errorSubheadingInvalidFormat");
-                } else {
-                    String[] numbers = matcher.group(1).split("\\.");
-                    int actualLevel = numbers.length;
-                    if (actualLevel != level) {
-                        errorsList.addError(text.toUpperCase(), "errorIncorrectActualHeadingLevel");
-                    }
-                }
-
-                boolean isBold = isParagraphBold(para);
-                if (!isBold) {
-                    errorsList.addError(text.toUpperCase(), "errorSubheadingNotBold");
-                }
-
-                String alignment = getEffectiveAlignment(para, checkParams);
-                if (!"BOTH".equals(alignment)) {
-                    errorsList.addError(text.toUpperCase(), "errorSubheadingIncorrectAlignment");
                 }
             }
         }
@@ -698,8 +499,14 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                 }
                 headings.add(new HeadingInfo(i, text, true, null));
             } else if (level != 0) {
-                System.out.println("Non-standard heading: " + para.getText().trim());
-                String number = extractHeadingNumber(para, level);
+
+                //System.out.println("Non-standard heading: " + para.getText().trim());
+                Pattern pattern = Pattern.compile(HEADING_PATTERN);
+                Matcher matcher = pattern.matcher(para.getText().trim());
+                String number = null;
+                if (matcher.find()) {
+                    number = matcher.group(1); // Номер заголовка (наприклад, "1" або "1.1.1")
+                }
                 if (number != null) {
                     headings.add(new HeadingInfo(i, text, false, number));
                 }
@@ -714,16 +521,6 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
 
         // 3. Перевірка перехрещення
         checkHeadingIntersection(headings, introIndex, conclusionsIndex, errorsList, checkParams);
-    }
-
-    private String extractHeadingNumber(XWPFParagraph para, int level) {
-        String text = para.getText().trim();
-        Pattern pattern = (level == 1) ? Pattern.compile(LEVEL1_HEADING_PATTERN) : Pattern.compile(LEVEL2_TO_4_HEADING_PATTERN);
-        Matcher matcher = pattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1); // Номер заголовка (наприклад, "1" або "1.1.1")
-        }
-        return null;
     }
 
     private void checkStandardHeadingOrder(List<HeadingInfo> headings, int introIndex, int conclusionsIndex,
