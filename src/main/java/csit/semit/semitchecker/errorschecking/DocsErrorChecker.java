@@ -37,8 +37,8 @@ public class DocsErrorChecker {
 
     private List<IErrorsCheckable> createChecksList() {
         List<IErrorsCheckable> listCh = new ArrayList<>();
-        listCh.add(new ErrorsLayoutCheck());
         listCh.add(new ErrorsTitlesCheck());
+        listCh.add(new ErrorsLayoutCheck());
         listCh.add(new ErrorsPerelikiCheck());
         listCh.add(new ErrorsTablesCheck());
         listCh.add(new ErrorsFiguresCheck());

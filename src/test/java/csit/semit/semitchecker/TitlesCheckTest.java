@@ -22,7 +22,7 @@ public class TitlesCheckTest {
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("en"));
         params.setLocaleWord(Locale.forLanguageTag("uk"));
-        ErrorsList errors = new ErrorsTitlesCheck().check(document, params, "title");
+        ErrorsList errors = new ErrorsTitlesCheck().check(document, params, "titles");
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
         }
@@ -36,7 +36,7 @@ public class TitlesCheckTest {
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("uk"));
         params.setLocaleWord(Locale.forLanguageTag("uk"));
-        ErrorsList errors = new ErrorsTitlesCheck().check(document, params, "title");
+        ErrorsList errors = new ErrorsTitlesCheck().check(document, params, "titles");
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
         }

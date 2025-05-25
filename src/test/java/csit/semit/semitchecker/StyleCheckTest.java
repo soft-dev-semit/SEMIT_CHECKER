@@ -29,7 +29,7 @@ public class StyleCheckTest {
                 "resourcesbundles/errorstexts/figure",
                 "resourcesbundles.errorstexts.titles",
                 "resourcesbundles.errorstexts.layout",
-                "resourcesbundles.errorstexts.text"); // без ".properties"
+                "resourcesbundles.errorstexts.style"); // без ".properties"
         messageSource.setDefaultEncoding("UTF-8");
 
         errorMessageGetter = new ErrorMessageGetter(messageSource);
