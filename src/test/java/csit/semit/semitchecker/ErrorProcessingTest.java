@@ -37,7 +37,9 @@ public class ErrorProcessingTest {
                 "resourcesbundles.docskeywords.docskeywords",
                 "resourcesbundles.docstyles.docswordstyles",
                 "resourcesbundles/errorstexts/pereliki",
-                "resourcesbundles/errorstexts/boundaries"); // без ".properties"
+                "resourcesbundles/errorstexts/style",
+                "resourcesbundles/errorstexts/layout",
+                "resourcesbundles/errorstexts/title"); // без ".properties"
         messageSource.setDefaultEncoding("UTF-8");
 
         errorMessageGetter = new ErrorMessageGetter(messageSource);

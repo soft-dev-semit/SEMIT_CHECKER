@@ -10,19 +10,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 
-public class TextCheckTest {
+public class StyleCheckTest {
     private String enDoc = "titles_layout_text_en.docx";
     private String uaDoc = "titles_layout_text_ua.docx";
 
     @Test
     void testCheckTitleNamesEn() throws IOException {
-        System.out.println("Checking main text in english");
+        System.out.println("Checking styles in english");
         Path path = Paths.get(enDoc);
         XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("en"));
         params.setLocaleWord(Locale.forLanguageTag("uk"));
-        ErrorsList errors = new ErrorsTextCheck().check(document, params, "text");
+        ErrorsList errors = new ErrorsStyleCheck().check(document, params, "style");
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
         }
@@ -30,13 +30,13 @@ public class TextCheckTest {
 
     @Test
     void testCheckTitleNamesUa() throws IOException {
-        System.out.println("Checking main text in ukrainian");
+        System.out.println("Checking styles in ukrainian");
         Path path = Paths.get(uaDoc);
         XWPFDocument document = new XWPFDocument(Files.newInputStream(path));
         CheckParams params = new CheckParams();
         params.setLocaleDoc(Locale.forLanguageTag("uk"));
         params.setLocaleWord(Locale.forLanguageTag("uk"));
-        ErrorsList errors = new ErrorsTextCheck().check(document, params, "text");
+        ErrorsList errors = new ErrorsStyleCheck().check(document, params, "style");
         for (CheckError error : errors.getErrors()) {
             System.out.println(error);
         }
