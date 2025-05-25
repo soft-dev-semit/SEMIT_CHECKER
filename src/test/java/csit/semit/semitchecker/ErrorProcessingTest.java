@@ -40,6 +40,9 @@ public class ErrorProcessingTest {
 //    String docName = "Test-file-pereliki_en_EN.docx";
 //    String docName = "Test-file-pereliki_en_UA.docx";
 //    String docName = "КР_МногоПомилок_ua_UA.docx";
+//    String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13дд.docx";
+//    String docName = "Шаталова_Blue.docx";
+//    String docName = "ExplNote_TEST.docx";
     String docName = "КП_АППЗ2_2025 Мелещук 2025_05_13дд.docx";
 //    String docName = "Шаталова_Blue.docx";
 

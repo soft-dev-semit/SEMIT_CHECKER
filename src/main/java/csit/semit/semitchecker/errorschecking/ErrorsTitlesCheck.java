@@ -256,8 +256,8 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         }
 
         List<String> standards = List.of(StandardHeadings.getAllHeadingsLocalized(checkParams));
-        System.out.println("Expected standard headings: " + standards);
-        System.out.println("Found standard headings: " + foundStandards);
+//        System.out.println("Expected standard headings: " + standards);
+//        System.out.println("Found standard headings: " + foundStandards);
 
         // Виключаємо ЗМІСТ і ДОДАТОК зі списку обов’язкових заголовків
         List<String> mandatoryStandards = standards.stream()
@@ -278,10 +278,10 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
             XWPFParagraph para = paragraphList.get(i);
             int level = getHeadingLevel(para, checkParams);
             if (level == 1) {
-                System.out.println("Checking Heading 1: " + para.getText());
+//                System.out.println("Checking Heading 1: " + para.getText());
                 // Отримуємо ефективний текст, який враховує форматування ALL CAPS
                 String text = getEffectiveText(para).trim();
-                System.out.println("Effective text: '" + text + "'");
+//                System.out.println("Effective text: '" + text + "'");
 
                 // Перевірка розриву розділу (з нової сторінки)
                 if (i > 0) {

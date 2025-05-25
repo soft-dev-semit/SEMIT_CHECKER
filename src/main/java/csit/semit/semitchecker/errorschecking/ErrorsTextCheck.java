@@ -25,7 +25,6 @@ public class ErrorsTextCheck implements IErrorsCheckable {
             }
 //            String errorPositionParagraph = paragraph.getStyle() != null ? paragraph.getText() : "Paragraph " + i;
             String errorPositionParagraph = paragraph.getText().length()>100? paragraph.getText().substring(0,100):paragraph.getText();
-            String errorPositionParagraph = paragraph.getStyle() != null ? paragraph.getText() : "Paragraph " + i;
             for (XWPFRun run : paragraph.getRuns()) {
                 String fontName = run.getFontName();
                 if (fontName == null || !fontName.equals("Times New Roman")) {
@@ -40,7 +39,6 @@ public class ErrorsTextCheck implements IErrorsCheckable {
                 if (color != null && !color.equalsIgnoreCase("000000") && !color.equalsIgnoreCase("auto")) {
                     errorsList.addError(errorPositionParagraph, "errorFontWrongColor");
                 }
-
             }
         }
     }
@@ -55,7 +53,6 @@ public class ErrorsTextCheck implements IErrorsCheckable {
             }
 //            String errorPositionParagraph = paragraph.getStyle() != null ? paragraph.getText() : "Paragraph " + i;
             String errorPositionParagraph = paragraph.getText().length()>100? paragraph.getText().substring(0,100):paragraph.getText();
-            String errorPositionParagraph = paragraph.getStyle() != null ? paragraph.getText() : "Paragraph " + i;
             int firstLineIndent = paragraph.getIndentationFirstLine();
             if ((paragraph.getStyle() == null || ErrorsTitlesCheck.getHeadingLevel(paragraph, checkParams) > 1) &&
                     firstLineIndent != -1 && Math.abs(firstLineIndent - 709) > EPSILON) {
