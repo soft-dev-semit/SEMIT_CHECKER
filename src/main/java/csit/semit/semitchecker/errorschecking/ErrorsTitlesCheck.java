@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 public class ErrorsTitlesCheck implements IErrorsCheckable {
@@ -56,7 +57,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         return 0;
     }
 
-    private boolean isStandardHeading(XWPFParagraph para, CheckParams checkParams, ErrorsList errorsList) {
+    private boolean isStandardHeading(XWPFParagraph para, CheckParams checkParams) {
         boolean isStandardHeading = false;
         String text = para.getText().trim();
 
@@ -90,7 +91,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
         String appendixHeadingPrefix = StandardHeadings.APPENDIX.getHeadingLocalized(checkParams).toUpperCase();
 
         for (XWPFParagraph para : paragraphList) {
-            if (isStandardHeading(para, checkParams, errorsList)) {
+            if (isStandardHeading(para, checkParams)) {
                 foundStandards.add(para.getText().toUpperCase());
             }
         }
@@ -125,7 +126,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
                     if (!startsNewPage) {
                         errorsList.addError(text, "errorHeading1NotOnNewPage");
                         // Перевірка інтервалу перед заголовком з діагностикою, якщо немає розриву розділу
-                        XWPFParagraph prevPara = i > 0 ? paragraphList.get(i - 1) : null;
+                        XWPFParagraph prevPara = paragraphList.get(i - 1);
                         if (prevPara != null) {
                             if (prevPara.getCTP().getPPr() != null && prevPara.getCTP().getPPr().getSpacing() != null) {
                                 CTSpacing spacing = prevPara.getCTP().getPPr().getSpacing();
@@ -163,28 +164,36 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
 
             if (level != 0) {
                 // Перевірка формату заголовка
-                if (!isStandardHeading(para, checkParams, errorsList)) {
-                    Pattern pattern = Pattern.compile(HEADING_PATTERN);
-                    Matcher matcher = pattern.matcher(text);
-                    if (!matcher.matches()) {
-                        if (text.endsWith(".")) {
-                            errorsList.addError(text, "errorHeadingHasPeriodInTheEnd");
-                        }
+                if (!isStandardHeading(para, checkParams)) {
+                    try {
+                        Pattern pattern = Pattern.compile(HEADING_PATTERN);
+                        Matcher matcher = pattern.matcher(text);
+                        if (!matcher.matches()) {
+                            boolean errorFlag = false;
+                            if (text.endsWith(".")) {
+                                errorFlag = true;
+                                errorsList.addError(text, "errorHeadingHasPeriodInTheEnd");
+                            }
 
-                        Pattern wrongPattern = Pattern.compile(WRONG_HEADING_PATTERN);
-                        Matcher wrongMatcher = wrongPattern.matcher(text);
-                        if (wrongMatcher.matches() && matcher.group(1).endsWith(".")) {
-                            errorsList.addError(text, "errorHeadingHasPeriodAfterNumber");
-                        } else {
-                            errorsList.addError(text, "errorHeadingInvalidFormat");
+                            Pattern wrongPattern = Pattern.compile(WRONG_HEADING_PATTERN);
+                            Matcher wrongMatcher = wrongPattern.matcher(text);
+                            if (wrongMatcher.matches() && wrongMatcher.group(1).endsWith(".")) {
+                                errorFlag = true;
+                                errorsList.addError(text, "errorHeadingHasPeriodAfterNumber");
+                            }
+                            if (!errorFlag) {
+                                errorsList.addError(text, "errorHeadingInvalidFormat");
+                            }
                         }
-                    }
-                    else {
-                        String[] numbers = matcher.group(1).split("\\.");
-                        int actualLevel = numbers.length;
-                        if (actualLevel != level) {
-                            errorsList.addError(text.toUpperCase(), "errorIncorrectActualHeadingLevel");
+                        else {
+                            String[] numbers = matcher.group(1).split("\\.");
+                            int actualLevel = numbers.length;
+                            if (actualLevel != level) {
+                                errorsList.addError(text.toUpperCase(), "errorIncorrectActualHeadingLevel");
+                            }
                         }
+                    } catch (Exception e) {
+                        errorsList.addError(text, "errorHeadingInvalidFormat");
                     }
                 }
             }
@@ -491,7 +500,7 @@ public class ErrorsTitlesCheck implements IErrorsCheckable {
             int level = getHeadingLevel(para, checkParams);
 
             // Перевірка стандартних заголовків (з урахуванням ЗМІСТ без стилю Heading 1)
-            if (isStandardHeading(para, checkParams, errorsList)) {
+            if (isStandardHeading(para, checkParams)) {
                 if (text.equals(StandardHeadings.INTRODUCTION.getHeadingLocalized(checkParams).toUpperCase())) {
                     introIndex = i;
                 } else if (text.equals(StandardHeadings.CONCLUSIONS.getHeadingLocalized(checkParams).toUpperCase())) {
