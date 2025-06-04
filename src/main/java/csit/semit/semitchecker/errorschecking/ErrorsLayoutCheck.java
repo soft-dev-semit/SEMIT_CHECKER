@@ -6,9 +6,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class ErrorsLayoutCheck implements IErrorsCheckable {
     private static final double TWENTIETHS_PER_MM = 56.692; // 1 мм через одиницю виміру у Word
@@ -30,68 +28,484 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
         return errorsList;
     }
 
-    private List<CTSectPr> getAllSectionProperties(XWPFDocument xwpfDocument) {
-        List<CTSectPr> sectPrList = new ArrayList<>();
-        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+//    private List<CTSectPr> getAllSectionProperties(XWPFDocument xwpfDocument, CheckParams checkParams) {
+//        List<CTSectPr> sectPrList = new ArrayList<>();
+//        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+//        String h1StyleId = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord()).getString("H1");
+//
+//        // Додаємо основну секцію документу
+//        CTSectPr docSectPr = xwpfDocument.getDocument().getBody().getSectPr();
+//        if (docSectPr != null) {
+//            sectPrList.add(docSectPr);
+//        }
+//
+//        // Створюємо список для відстеження доданих H1 секцій
+//        List<Integer> h1SectionIndexes = new ArrayList<>();
+//
+//        // Проходимо через всі параграфи
+//        for (int paraIndex = 0; paraIndex < paragraphs.size(); paraIndex++) {
+//            XWPFParagraph paragraph = paragraphs.get(paraIndex);
+//            boolean isNewSection = false;
+//            String sectionReason = "";
+//
+//            // 1. Перевіряємо наявність sectPr у параграфі
+//            CTSectPr sectPr = paragraph.getCTP().getPPr() != null ? paragraph.getCTP().getPPr().getSectPr() : null;
+//            if (sectPr != null && !sectPrList.contains(sectPr)) {
+//                sectPrList.add(sectPr);
+//                continue;
+//            }
+//
+//            // 2. Перевіряємо стиль параграфа та умови розриву сторінки
+//            if (paragraph.getCTP() != null && paragraph.getCTP().getPPr() != null) {
+//                // Перевіряємо прямий pageBreakBefore
+//                if (paragraph.getCTP().getPPr().isSetPageBreakBefore()) {
+//                    isNewSection = true;
+//                    sectionReason = "параграф має pageBreakBefore";
+//                }
+//
+//                // Перевіряємо стиль параграфа на H1
+//                else if (paragraph.getCTP().getPPr().isSetPStyle()) {
+//                    String styleId = paragraph.getCTP().getPPr().getPStyle().getVal();
+//                    if (h1StyleId.equals(styleId)) {
+//
+//                        // Для H1 перевіряємо додаткові умови
+//                        boolean hasPageBreak = false;
+//                        String pageBreakType = "";
+//
+//                        // Перевіряємо наявність lastRenderedPageBreak у runs цього параграфа
+//                        for (XWPFRun run : paragraph.getRuns()) {
+//                            if (run.getCTR() != null) {
+//                                XmlObject xmlObj = run.getCTR();
+//                                Node node = xmlObj.getDomNode();
+//                                NodeList childNodes = node.getChildNodes();
+//                                for (int j = 0; j < childNodes.getLength(); j++) {
+//                                    Node childNode = childNodes.item(j);
+//                                    if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+//                                        hasPageBreak = true;
+//                                        pageBreakType = "lastRenderedPageBreak у поточному параграфі";
+//                                        break;
+//                                    }
+//                                }
+//                                if (hasPageBreak) break;
+//                            }
+//                        }
+//
+//                        // Перевіряємо наявність CTBr з типом page у runs цього параграфа
+//                        if (!hasPageBreak) {
+//                            for (XWPFRun run : paragraph.getRuns()) {
+//                                if (run.getCTR() != null) {
+//                                    CTBr[] breakElements = run.getCTR().getBrArray();
+//                                    if (breakElements != null && breakElements.length > 0) {
+//                                        for (CTBr br : breakElements) {
+//                                            if (br.isSetType() && "page".equals(br.getType().toString())) {
+//                                                hasPageBreak = true;
+//                                                pageBreakType = "CTBr page у поточному параграфі";
+//                                                break;
+//                                            }
+//                                        }
+//                                        if (hasPageBreak) break;
+//                                    }
+//                                }
+//                            }
+//                        }
+//
+//                        // Перевіряємо наявність розриву сторінки у попередньому параграфі
+//                        if (!hasPageBreak && paraIndex > 0) {
+//                            XWPFParagraph prevParagraph = paragraphs.get(paraIndex - 1);
+//                            for (XWPFRun run : prevParagraph.getRuns()) {
+//                                if (run.getCTR() != null) {
+//                                    CTBr[] breakElements = run.getCTR().getBrArray();
+//                                    if (breakElements != null && breakElements.length > 0) {
+//                                        for (CTBr br : breakElements) {
+//                                            if (br.isSetType() && "page".equals(br.getType().toString())) {
+//                                                hasPageBreak = true;
+//                                                pageBreakType = "CTBr page у попередньому параграфі";
+//                                                break;
+//                                            }
+//                                        }
+//                                        if (hasPageBreak) break;
+//                                    }
+//                                }
+//                            }
+//                        }
+//
+//                        // Перевіряємо наявність sectPr у попередньому параграфі (нова секція після sectPr)
+//                        if (!hasPageBreak && paraIndex > 0) {
+//                            XWPFParagraph prevParagraph = paragraphs.get(paraIndex - 1);
+//                            CTSectPr prevSectPr = prevParagraph.getCTP().getPPr() != null ?
+//                                    prevParagraph.getCTP().getPPr().getSectPr() : null;
+//                            if (prevSectPr != null) {
+//                                hasPageBreak = true;
+//                                pageBreakType = "sectPr у попередньому параграфі";
+//                            }
+//                        }
+//
+//                        if (hasPageBreak) {
+//                            isNewSection = true;
+//                            sectionReason = "параграф має стиль H1 з розривом сторінки (" + pageBreakType + ")";
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // 3. Перевіряємо runs на розриви сторінок (для не-H1 параграфів)
+//            if (!isNewSection) {
+//                for (int runIndex = 0; runIndex < paragraph.getRuns().size(); runIndex++) {
+//                    XWPFRun run = paragraph.getRuns().get(runIndex);
+//
+//                    // Перевіряємо символ розриву сторінки \f
+//                    String text = run.getText(0);
+//                    if (text != null && text.contains("\f")) {
+//                        isNewSection = true;
+//                        sectionReason = "знайдено символ розриву сторінки \\f у run " + runIndex;
+//                        break;
+//                    }
+//
+//                    if (run.getCTR() != null) {
+//                        // Перевіряємо CTBr елементи на "page"
+//                        CTBr[] breakElements = run.getCTR().getBrArray();
+//                        if (breakElements != null && breakElements.length > 0) {
+//                            for (CTBr br : breakElements) {
+//                                if (br.isSetType() && "page".equals(br.getType().toString())) {
+//                                    isNewSection = true;
+//                                    sectionReason = "знайдено CTBr з типом page у run " + runIndex;
+//                                    break;
+//                                }
+//                            }
+//                            if (isNewSection) break;
+//                        }
+//
+//                        // Перевіряємо lastRenderedPageBreak
+//                        XmlObject xmlObj = run.getCTR();
+//                        Node node = xmlObj.getDomNode();
+//                        NodeList childNodes = node.getChildNodes();
+//                        for (int j = 0; j < childNodes.getLength(); j++) {
+//                            Node childNode = childNodes.item(j);
+//                            if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+//                                isNewSection = true;
+//                                sectionReason = "знайдено lastRenderedPageBreak у run " + runIndex;
+//                                break;
+//                            }
+//                        }
+//                        if (isNewSection) break;
+//                    }
+//                }
+//            }
+//
+//            // Якщо знайдено нову секцію
+//            if (isNewSection) {
+//                CTSectPr newSectPr = null;
+//
+//                // Шукаємо найближчу sectPr після цього параграфа
+//                for (int i = paraIndex; i < paragraphs.size(); i++) {
+//                    XWPFParagraph p = paragraphs.get(i);
+//                    CTSectPr candidateSectPr = p.getCTP().getPPr() != null ? p.getCTP().getPPr().getSectPr() : null;
+//                    if (candidateSectPr != null) {
+//                        newSectPr = candidateSectPr;
+//                        break;
+//                    }
+//                }
+//
+//                // Якщо не знайшли sectPr після, використовуємо основну секцію документу
+//                if (newSectPr == null) {
+//                    newSectPr = docSectPr;
+//                }
+//
+//                // Для H1 параграфів завжди додаємо як нову секцію
+//                if (newSectPr != null && sectionReason.contains("стиль H1")) {
+//                    sectPrList.add(newSectPr);
+//                    h1SectionIndexes.add(paraIndex);
+//                }
+//                // Для інших типів секцій додаємо тільки якщо sectPr унікальна
+//                else if (newSectPr != null && !sectPrList.contains(newSectPr)) {
+//                    sectPrList.add(newSectPr);
+//                }
+//            }
+//        }
+//
+//        // Виводимо кількість знайдених секцій
+//        System.out.println("Знайдено секцій у документі: " + sectPrList.size());
+//        System.out.println("H1 секції знайдено в параграфах: " + h1SectionIndexes);
+//
+//        return sectPrList;
+//    }
 
-        CTSectPr firstSectPr = xwpfDocument.getDocument().getBody().getSectPr();
-        if (firstSectPr != null && !sectPrList.contains(firstSectPr)) {
-            sectPrList.add(firstSectPr);
+    private Map<String, List<?>> getAllSectionProperties(XWPFDocument xwpfDocument, CheckParams checkParams) {
+        List<CTSectPr> sectPrList = new ArrayList<>();
+        List<String> textList = new ArrayList<>();
+        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+        String h1StyleId = ResourceBundle.getBundle("resourcesbundles/docstyles/docswordstyles", checkParams.getLocaleWord()).getString("H1");
+
+        // Додаємо основну секцію документу
+        CTSectPr docSectPr = xwpfDocument.getDocument().getBody().getSectPr();
+        if (docSectPr != null) {
+            sectPrList.add(docSectPr);
+            textList.add("mainSection");
         }
 
-        for (int i = 0; i < paragraphs.size(); i++) {
-            XWPFParagraph paragraph = paragraphs.get(i);
+        // Створюємо список для відстеження доданих H1 секцій
+        List<Integer> h1SectionIndexes = new ArrayList<>();
+
+        // Проходимо через всі параграфи
+        for (int paraIndex = 0; paraIndex < paragraphs.size(); paraIndex++) {
+            XWPFParagraph paragraph = paragraphs.get(paraIndex);
+            boolean isNewSection = false;
+            String sectionReason = "";
+
+            // 1. Перевіряємо наявність sectPr у параграфі
             CTSectPr sectPr = paragraph.getCTP().getPPr() != null ? paragraph.getCTP().getPPr().getSectPr() : null;
             if (sectPr != null && !sectPrList.contains(sectPr)) {
-                int sectionNumber = checkSectionBreak(xwpfDocument, sectPrList.size(), sectPrList);
-                if (sectionNumber > 0 || sectPrList.isEmpty()) {
-                    sectPrList.add(sectPr);
+                sectPrList.add(sectPr);
+                textList.add(paragraph.getText());
+                continue;
+            }
+
+            // 2. Перевіряємо стиль параграфа та умови розриву сторінки
+            if (paragraph.getCTP() != null && paragraph.getCTP().getPPr() != null) {
+                // Перевіряємо прямий pageBreakBefore
+                if (paragraph.getCTP().getPPr().isSetPageBreakBefore()) {
+                    isNewSection = true;
+                    sectionReason = "параграф має pageBreakBefore";
+                }
+
+                // Перевіряємо стиль параграфа на H1
+                else if (paragraph.getCTP().getPPr().isSetPStyle()) {
+                    String styleId = paragraph.getCTP().getPPr().getPStyle().getVal();
+                    if (h1StyleId.equals(styleId)) {
+
+                        // Для H1 перевіряємо додаткові умови
+                        boolean hasPageBreak = false;
+                        String pageBreakType = "";
+
+                        // Перевіряємо наявність lastRenderedPageBreak у runs цього параграфа
+                        for (XWPFRun run : paragraph.getRuns()) {
+                            if (run.getCTR() != null) {
+                                XmlObject xmlObj = run.getCTR();
+                                Node node = xmlObj.getDomNode();
+                                NodeList childNodes = node.getChildNodes();
+                                for (int j = 0; j < childNodes.getLength(); j++) {
+                                    Node childNode = childNodes.item(j);
+                                    if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+                                        hasPageBreak = true;
+                                        pageBreakType = "lastRenderedPageBreak у поточному параграфі";
+                                        break;
+                                    }
+                                }
+                                if (hasPageBreak) break;
+                            }
+                        }
+
+                        // Перевіряємо наявність CTBr з типом page у runs цього параграфа
+                        if (!hasPageBreak) {
+                            for (XWPFRun run : paragraph.getRuns()) {
+                                if (run.getCTR() != null) {
+                                    CTBr[] breakElements = run.getCTR().getBrArray();
+                                    if (breakElements != null && breakElements.length > 0) {
+                                        for (CTBr br : breakElements) {
+                                            if (br.isSetType() && "page".equals(br.getType().toString())) {
+                                                hasPageBreak = true;
+                                                pageBreakType = "CTBr page у поточному параграфі";
+                                                break;
+                                            }
+                                        }
+                                        if (hasPageBreak) break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Перевіряємо наявність розриву сторінки у попередньому параграфі
+                        if (!hasPageBreak && paraIndex > 0) {
+                            XWPFParagraph prevParagraph = paragraphs.get(paraIndex - 1);
+                            for (XWPFRun run : prevParagraph.getRuns()) {
+                                if (run.getCTR() != null) {
+                                    CTBr[] breakElements = run.getCTR().getBrArray();
+                                    if (breakElements != null && breakElements.length > 0) {
+                                        for (CTBr br : breakElements) {
+                                            if (br.isSetType() && "page".equals(br.getType().toString())) {
+                                                hasPageBreak = true;
+                                                pageBreakType = "CTBr page у попередньому параграфі";
+                                                break;
+                                            }
+                                        }
+                                        if (hasPageBreak) break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Перевіряємо наявність sectPr у попередньому параграфі (нова секція після sectPr)
+                        if (!hasPageBreak && paraIndex > 0) {
+                            XWPFParagraph prevParagraph = paragraphs.get(paraIndex - 1);
+                            CTSectPr prevSectPr = prevParagraph.getCTP().getPPr() != null ?
+                                    prevParagraph.getCTP().getPPr().getSectPr() : null;
+                            if (prevSectPr != null) {
+                                hasPageBreak = true;
+                                pageBreakType = "sectPr у попередньому параграфі";
+                            }
+                        }
+
+                        if (hasPageBreak) {
+                            isNewSection = true;
+                            sectionReason = "параграф має стиль H1 з розривом сторінки (" + pageBreakType + ")";
+                        }
+                    }
+                }
+            }
+
+            // 3. Перевіряємо runs на розриви сторінок (для не-H1 параграфів)
+            if (!isNewSection) {
+                for (int runIndex = 0; runIndex < paragraph.getRuns().size(); runIndex++) {
+                    XWPFRun run = paragraph.getRuns().get(runIndex);
+
+                    // Перевіряємо символ розриву сторінки \f
+                    String text = run.getText(0);
+                    if (text != null && text.contains("\f")) {
+                        isNewSection = true;
+                        sectionReason = "знайдено символ розриву сторінки \\f у run " + runIndex;
+                        break;
+                    }
+
+                    if (run.getCTR() != null) {
+                        // Перевіряємо CTBr елементи на "page"
+                        CTBr[] breakElements = run.getCTR().getBrArray();
+                        if (breakElements != null && breakElements.length > 0) {
+                            for (CTBr br : breakElements) {
+                                if (br.isSetType() && "page".equals(br.getType().toString())) {
+                                    isNewSection = true;
+                                    sectionReason = "знайдено CTBr з типом page у run " + runIndex;
+                                    break;
+                                }
+                            }
+                            if (isNewSection) break;
+                        }
+
+                        // Перевіряємо lastRenderedPageBreak
+                        XmlObject xmlObj = run.getCTR();
+                        Node node = xmlObj.getDomNode();
+                        NodeList childNodes = node.getChildNodes();
+                        for (int j = 0; j < childNodes.getLength(); j++) {
+                            Node childNode = childNodes.item(j);
+                            if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+                                isNewSection = true;
+                                sectionReason = "знайдено lastRenderedPageBreak у run " + runIndex;
+                                break;
+                            }
+                        }
+                        if (isNewSection) break;
+                    }
+                }
+            }
+
+            // Якщо знайдено нову секцію
+            if (isNewSection) {
+                CTSectPr newSectPr = null;
+
+                // Шукаємо найближчу sectPr після цього параграфа
+                for (int i = paraIndex; i < paragraphs.size(); i++) {
+                    XWPFParagraph p = paragraphs.get(i);
+                    CTSectPr candidateSectPr = p.getCTP().getPPr() != null ? p.getCTP().getPPr().getSectPr() : null;
+                    if (candidateSectPr != null) {
+                        newSectPr = candidateSectPr;
+                        break;
+                    }
+                }
+
+                // Якщо не знайшли sectPr після, використовуємо основну секцію документу
+                if (newSectPr == null) {
+                    newSectPr = docSectPr;
+                }
+
+                // Для H1 параграфів завжди додаємо як нову секцію (дозволяємо дублікати)
+                if (newSectPr != null && sectionReason.contains("стиль H1")) {
+                    sectPrList.add(newSectPr);
+                    textList.add(paragraph.getText());
+                    h1SectionIndexes.add(paraIndex);
+                }
+                // Для інших типів секцій додаємо тільки якщо sectPr унікальна
+                else if (newSectPr != null && !sectPrList.contains(newSectPr)) {
+                    sectPrList.add(newSectPr);
+                    textList.add(paragraph.getText());
                 }
             }
         }
 
-        CTSectPr docSectPr = xwpfDocument.getDocument().getBody().getSectPr();
-        if (docSectPr != null && !sectPrList.contains(docSectPr)) {
-            int sectionNumber = checkSectionBreak(xwpfDocument, sectPrList.size(), sectPrList);
-            if (sectionNumber > 0 || sectPrList.isEmpty()) {
-                sectPrList.add(docSectPr);
-            }
-        }
-//        System.out.println(sectPrList);
+        // Виводимо кількість знайдених секцій
+//        System.out.println("Знайдено секцій у документі: " + sectPrList.size());
+//        System.out.println("H1 секції знайдено в параграфах: " + h1SectionIndexes);
 
-        return sectPrList;
+        // Повертаємо Map з двома списками
+        Map<String, List<?>> result = new HashMap<>();
+        result.put("sections", sectPrList);
+        result.put("texts", textList);
+        return result;
     }
 
+//    private void checkA4Format(XWPFDocument xwpfDocument, ErrorsList errorsList, CheckParams checkParams) {
+//        List<CTSectPr> sectPrList = getAllSectionProperties(xwpfDocument, checkParams);
+//
+//        String section = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("section");
+//
+//        for (int i = 0; i < sectPrList.size(); i++) {
+//            CTSectPr sectPr = sectPrList.get(i);
+//            if (sectPr != null) {
+//                CTPageSz pgSz = sectPr.getPgSz();
+//                if (pgSz != null) {
+//                    double width = ((Number) pgSz.getW()).doubleValue();
+//                    double height = ((Number) pgSz.getH()).doubleValue();
+//                    double expectedWidth = A4_WIDTH_MM * TWENTIETHS_PER_MM;
+//                    double expectedHeight = A4_HEIGHT_MM * TWENTIETHS_PER_MM;
+////                    System.out.println("width = " + width + " " + width / TWENTIETHS_PER_MM);
+////                    System.out.println("height = " + height + " " + height / TWENTIETHS_PER_MM);
+//
+//                    if (isLandscapeOrientation(sectPr)) {
+//                        if (Math.abs(height - expectedWidth) > EPSILON || Math.abs(width - expectedHeight) > EPSILON) {
+//                            errorsList.addError(section + " " + i, "errorPageFormatIncorrect");
+//                        }
+//                    }
+//                    else {
+//                        if (Math.abs(width - expectedWidth) > EPSILON || Math.abs(height - expectedHeight) > EPSILON) {
+//
+//                            errorsList.addError(section + " " + i, "errorPageFormatIncorrect");
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
     private void checkA4Format(XWPFDocument xwpfDocument, ErrorsList errorsList, CheckParams checkParams) {
-        List<CTSectPr> sectPrList = getAllSectionProperties(xwpfDocument);
-        int sectionNumber = 0;
+        Map<String, List<?>> result = getAllSectionProperties(xwpfDocument, checkParams);
+
+        List<CTSectPr> sectPrList = (List<CTSectPr>) result.get("sections");
+        List<String> textsList = (List<String>) result.get("texts");
 
         String section = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("section");
 
         for (int i = 0; i < sectPrList.size(); i++) {
             CTSectPr sectPr = sectPrList.get(i);
-            sectionNumber = checkSectionBreak(xwpfDocument, i, sectPrList);
-            if (sectionNumber == 0) {
-                sectionNumber = i + 1;
-            }
             if (sectPr != null) {
+                String sectionText = section + " " + textsList.get(i);
+                if (sectionText == section + " " + "mainSection") {
+                    sectionText = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("mainSection");
+                }
                 CTPageSz pgSz = sectPr.getPgSz();
                 if (pgSz != null) {
                     double width = ((Number) pgSz.getW()).doubleValue();
                     double height = ((Number) pgSz.getH()).doubleValue();
                     double expectedWidth = A4_WIDTH_MM * TWENTIETHS_PER_MM;
                     double expectedHeight = A4_HEIGHT_MM * TWENTIETHS_PER_MM;
+//                    System.out.println("width = " + width + " " + width / TWENTIETHS_PER_MM);
+//                    System.out.println("height = " + height + " " + height / TWENTIETHS_PER_MM);
 
                     if (isLandscapeOrientation(sectPr)) {
                         if (Math.abs(height - expectedWidth) > EPSILON || Math.abs(width - expectedHeight) > EPSILON) {
-                            errorsList.addError(section + " " + sectionNumber, "errorPageFormatIncorrect");
+                            errorsList.addError(sectionText, "errorPageFormatIncorrect");
                         }
                     }
                     else {
                         if (Math.abs(width - expectedWidth) > EPSILON || Math.abs(height - expectedHeight) > EPSILON) {
-//                            System.out.println("width = " + width + " " + width / TWENTIETHS_PER_MM);
-//                            System.out.println("height = " + height + " " + height / TWENTIETHS_PER_MM);
-                            errorsList.addError(section + " " + sectionNumber, "errorPageFormatIncorrect");
+                            errorsList.addError(sectionText, "errorPageFormatIncorrect");
                         }
                     }
                 }
@@ -100,18 +514,20 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
     }
 
     private void checkPageMargins(XWPFDocument xwpfDocument, ErrorsList errorsList, CheckParams checkParams) {
-        List<CTSectPr> sectPrList = getAllSectionProperties(xwpfDocument);
-        int sectionNumber = 0;
+        Map<String, List<?>> result = getAllSectionProperties(xwpfDocument, checkParams);
+
+        List<CTSectPr> sectPrList = (List<CTSectPr>) result.get("sections");
+        List<String> textsList = (List<String>) result.get("texts");
 
         String section = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("section");
 
         for (int i = 0; i < sectPrList.size(); i++) {
             CTSectPr sectPr = sectPrList.get(i);
-            sectionNumber = checkSectionBreak(xwpfDocument, i, sectPrList);
-            if (sectionNumber == 0) {
-                sectionNumber = i + 1;
-            }
             if (sectPr != null) {
+                String sectionText = section + " " + textsList.get(i);
+                if (sectionText == section + " " + "mainSection") {
+                    sectionText = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("mainSection");
+                }
                 CTPageSz pgSz = sectPr.getPgSz();
                 if (pgSz != null) {
                     CTPageMar pgMar = sectPr.getPgMar();
@@ -137,14 +553,14 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
                             if (Math.abs(left - right) > EPSILON || Math.abs(left - topBottom) > EPSILON ||
                                     (top > maxLeft && top - maxLeft > EPSILON) || (top < minLeft && minLeft - top > EPSILON) ||
                                     (bottom > maxRight && bottom - maxRight > EPSILON) || (bottom < minRight && minRight - bottom > EPSILON)) {
-                                    errorsList.addError(section + " " + sectionNumber, "errorIncorrectMargins");
+                                    errorsList.addError(sectionText, "errorIncorrectMargins");
                             }
                         }
                         else {
                             if (Math.abs(top - topBottom) > EPSILON || Math.abs(bottom - topBottom) > EPSILON ||
                                     (left > maxLeft && left - maxLeft > EPSILON) || (left < minLeft && minLeft - left > EPSILON) ||
                                     (right > maxRight && right - maxRight > EPSILON) || (right < minRight && minRight - right > EPSILON)) {
-                                    errorsList.addError(section + " " + sectionNumber, "errorIncorrectMargins");
+                                    errorsList.addError(sectionText, "errorIncorrectMargins");
                             }
                         }
                     }
@@ -155,15 +571,22 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
 
     // checking order of page numbers - ?
     private void checkPageNumbering(XWPFDocument xwpfDocument, ErrorsList errorsList, CheckParams checkParams) {
-        List<CTSectPr> sectPrList = getAllSectionProperties(xwpfDocument);
+        Map<String, List<?>> result = getAllSectionProperties(xwpfDocument, checkParams);
+
+        List<CTSectPr> sectPrList = (List<CTSectPr>) result.get("sections");
+        List<String> textsList = (List<String>) result.get("texts");
+
         int expectedPageNumber = 2;
-        int sectionNumber = 0;
 
         String section = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleDoc()).getString("section");
 
-        for (CTSectPr sectPr : sectPrList) {
-            sectionNumber++;
+        for (int i = 0; i < sectPrList.size(); i++) {
+            CTSectPr sectPr = sectPrList.get(i);
             if (sectPr != null) {
+                String sectionText = section + " " + textsList.get(i);
+                if (sectionText == section + " " + "mainSection") {
+                    sectionText = ResourceBundle.getBundle("resourcesbundles/docskeywords/docskeywords", checkParams.getLocaleInterface()).getString("mainSection");
+                }
                 int sectionStart = expectedPageNumber;
                 if (sectPr.getPgNumType() != null && sectPr.getPgNumType().getStart() != null) {
                     sectionStart = sectPr.getPgNumType().getStart().intValue();
@@ -181,11 +604,11 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
 
                         if (!paraText.isEmpty()) {
                             if (!paraText.matches("[1-9]\\d*")) {
-                                errorsList.addError(section + " = " + sectionNumber, "errorPageNumberIncorrectOrMissing");
+                                errorsList.addError(sectionText, "errorPageNumberIncorrectOrMissing");
                             } else {
                                 int actualPageNumber = Integer.parseInt(paraText);
                                 if (actualPageNumber != expectedPageNumber) {
-                                    errorsList.addError(section + sectionNumber + " (Page " + actualPageNumber + ")",
+                                    errorsList.addError(sectionText + " (Page " + actualPageNumber + ")",
                                             "errorPageNumberOutOfOrder");
                                 }
                                 expectedPageNumber++;
@@ -193,7 +616,7 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
                         }
 
                         if (para.getAlignment() != ParagraphAlignment.RIGHT) {
-                            errorsList.addError(section + sectionNumber, "errorPageNumberWrongPlace");
+                            errorsList.addError(sectionText, "errorPageNumberWrongPlace");
                         }
                     }
                 }
@@ -211,101 +634,133 @@ public class ErrorsLayoutCheck implements IErrorsCheckable {
         return false;
     }
 
-    private int checkSectionBreak(XWPFDocument document, int sectionIndex, List<CTSectPr> sectPrList) {
-        if (sectionIndex <= 0) {
-            return 1;
-        }
+//    private List<CTSectPr> getAllSectionProperties(XWPFDocument xwpfDocument) {
+//        List<CTSectPr> sectPrList = new ArrayList<>();
+//        List<XWPFParagraph> paragraphs = xwpfDocument.getParagraphs();
+//
+//        CTSectPr firstSectPr = xwpfDocument.getDocument().getBody().getSectPr();
+//        if (firstSectPr != null && !sectPrList.contains(firstSectPr)) {
+//            sectPrList.add(firstSectPr);
+//        }
+//
+//        for (int i = 0; i < paragraphs.size(); i++) {
+//            XWPFParagraph paragraph = paragraphs.get(i);
+//            CTSectPr sectPr = paragraph.getCTP().getPPr() != null ? paragraph.getCTP().getPPr().getSectPr() : null;
+//            if (sectPr != null && !sectPrList.contains(sectPr)) {
+//                int sectionNumber = checkSectionBreak(xwpfDocument, sectPrList.size(), sectPrList);
+//                if (sectionNumber > 0 || sectPrList.isEmpty()) {
+//                    sectPrList.add(sectPr);
+//                }
+//            }
+//        }
+//
+//        CTSectPr docSectPr = xwpfDocument.getDocument().getBody().getSectPr();
+//        if (docSectPr != null && !sectPrList.contains(docSectPr)) {
+//            int sectionNumber = checkSectionBreak(xwpfDocument, sectPrList.size(), sectPrList);
+//            if (sectionNumber > 0 || sectPrList.isEmpty()) {
+//                sectPrList.add(docSectPr);
+//            }
+//        }
+////        System.out.println(sectPrList);
+//
+//        return sectPrList;
+//    }
 
-        CTSectPr currentSectPr = sectPrList.get(sectionIndex);
-
-        if (currentSectPr != null && currentSectPr.isSetType()) {
-            CTSectType sectType = currentSectPr.getType();
-            if (sectType != null && sectType.isSetVal() && "nextPage".equals(sectType.getVal().toString())) {
-                return sectionIndex + 1;
-            }
-        }
-
-        List<XWPFParagraph> paragraphs = document.getParagraphs();
-        for (int i = 0; i < paragraphs.size(); i++) {
-            XWPFParagraph para = paragraphs.get(i);
-            CTSectPr paraSectPr = para.getCTP().getPPr() != null ? para.getCTP().getPPr().getSectPr() : null;
-            if (paraSectPr != null && paraSectPr.equals(currentSectPr)) {
-                for (XWPFRun run : para.getRuns()) {
-                    String text = run.getText(0);
-                    if (text != null && text.contains("\f")) {
-                        return sectionIndex + 1;
-                    }
-
-                    if (run.getCTR() != null) {
-                        CTBr[] breakElements = run.getCTR().getBrArray();
-                        if (breakElements != null && breakElements.length > 0) {
-                            for (CTBr br : breakElements) {
-                                if (br.isSetType() && "page".equals(br.getType().toString())) {
-                                    return sectionIndex + 1;
-                                }
-                            }
-                        }
-
-                        XmlObject xmlObj = run.getCTR();
-                        Node node = xmlObj.getDomNode();
-                        NodeList childNodes = node.getChildNodes();
-                        for (int j = 0; j < childNodes.getLength(); j++) {
-                            Node childNode = childNodes.item(j);
-                            if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
-                                return sectionIndex + 1;
-                            }
-                        }
-                    }
-                }
-
-                if (para.getCTP() != null && para.getCTP().getPPr() != null && para.getCTP().getPPr().isSetPageBreakBefore()) {
-                    return sectionIndex + 1;
-                }
-            }
-        }
-
-        if (sectionIndex > 0) {
-            CTSectPr prevSectPr = sectPrList.get(sectionIndex - 1);
-            if (prevSectPr != null && prevSectPr.isSetType()) {
-                CTSectType prevSectType = prevSectPr.getType();
-                if (prevSectType != null && prevSectType.isSetVal() && "nextPage".equals(prevSectType.getVal().toString())) {
-                    return sectionIndex + 1;
-                }
-            }
-        }
-
-        for (int i = sectionIndex - 1; i >= 0; i--) {
-            CTSectPr prevSectPr = sectPrList.get(i);
-            for (int j = 0; j < paragraphs.size(); j++) {
-                XWPFParagraph p = paragraphs.get(j);
-                CTSectPr paraSectPr = p.getCTP().getPPr() != null ? p.getCTP().getPPr().getSectPr() : null;
-                if (paraSectPr != null && paraSectPr.equals(prevSectPr)) {
-                    if (!p.getText().trim().isEmpty() && i < sectionIndex - 1) {
-                        break;
-                    }
-
-                    for (XWPFRun r : p.getRuns()) {
-                        if (r.getCTR() != null) {
-                            CTBr[] breakElements = r.getCTR().getBrArray();
-                            if (breakElements != null && breakElements.length > 0) {
-                                return sectionIndex + 1;
-                            }
-
-                            XmlObject xmlObj = r.getCTR();
-                            Node node = xmlObj.getDomNode();
-                            NodeList childNodes = node.getChildNodes();
-                            for (int k = 0; k < childNodes.getLength(); k++) {
-                                Node childNode = childNodes.item(k);
-                                if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
-                                    return sectionIndex + 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return 0;
-    }
+//    private int checkSectionBreak(XWPFDocument document, int sectionIndex, List<CTSectPr> sectPrList) {
+//        if (sectionIndex <= 0) {
+//            return 1;
+//        }
+//
+//        CTSectPr currentSectPr = sectPrList.get(sectionIndex);
+//
+//        if (currentSectPr != null && currentSectPr.isSetType()) {
+//            CTSectType sectType = currentSectPr.getType();
+//            if (sectType != null && sectType.isSetVal() && "nextPage".equals(sectType.getVal().toString())) {
+//                return sectionIndex + 1;
+//            }
+//        }
+//
+//        List<XWPFParagraph> paragraphs = document.getParagraphs();
+//        for (int i = 0; i < paragraphs.size(); i++) {
+//            XWPFParagraph para = paragraphs.get(i);
+//            CTSectPr paraSectPr = para.getCTP().getPPr() != null ? para.getCTP().getPPr().getSectPr() : null;
+//            if (paraSectPr != null && paraSectPr.equals(currentSectPr)) {
+//                for (XWPFRun run : para.getRuns()) {
+//                    String text = run.getText(0);
+//                    if (text != null && text.contains("\f")) {
+//                        return sectionIndex + 1;
+//                    }
+//
+//                    if (run.getCTR() != null) {
+//                        CTBr[] breakElements = run.getCTR().getBrArray();
+//                        if (breakElements != null && breakElements.length > 0) {
+//                            for (CTBr br : breakElements) {
+//                                if (br.isSetType() && "page".equals(br.getType().toString())) {
+//                                    return sectionIndex + 1;
+//                                }
+//                            }
+//                        }
+//
+//                        XmlObject xmlObj = run.getCTR();
+//                        Node node = xmlObj.getDomNode();
+//                        NodeList childNodes = node.getChildNodes();
+//                        for (int j = 0; j < childNodes.getLength(); j++) {
+//                            Node childNode = childNodes.item(j);
+//                            if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+//                                return sectionIndex + 1;
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                if (para.getCTP() != null && para.getCTP().getPPr() != null && para.getCTP().getPPr().isSetPageBreakBefore()) {
+//                    return sectionIndex + 1;
+//                }
+//            }
+//        }
+//
+//        if (sectionIndex > 0) {
+//            CTSectPr prevSectPr = sectPrList.get(sectionIndex - 1);
+//            if (prevSectPr != null && prevSectPr.isSetType()) {
+//                CTSectType prevSectType = prevSectPr.getType();
+//                if (prevSectType != null && prevSectType.isSetVal() && "nextPage".equals(prevSectType.getVal().toString())) {
+//                    return sectionIndex + 1;
+//                }
+//            }
+//        }
+//
+//        for (int i = sectionIndex - 1; i >= 0; i--) {
+//            CTSectPr prevSectPr = sectPrList.get(i);
+//            for (int j = 0; j < paragraphs.size(); j++) {
+//                XWPFParagraph p = paragraphs.get(j);
+//                CTSectPr paraSectPr = p.getCTP().getPPr() != null ? p.getCTP().getPPr().getSectPr() : null;
+//                if (paraSectPr != null && paraSectPr.equals(prevSectPr)) {
+//                    if (!p.getText().trim().isEmpty() && i < sectionIndex - 1) {
+//                        break;
+//                    }
+//
+//                    for (XWPFRun r : p.getRuns()) {
+//                        if (r.getCTR() != null) {
+//                            CTBr[] breakElements = r.getCTR().getBrArray();
+//                            if (breakElements != null && breakElements.length > 0) {
+//                                return sectionIndex + 1;
+//                            }
+//
+//                            XmlObject xmlObj = r.getCTR();
+//                            Node node = xmlObj.getDomNode();
+//                            NodeList childNodes = node.getChildNodes();
+//                            for (int k = 0; k < childNodes.getLength(); k++) {
+//                                Node childNode = childNodes.item(k);
+//                                if ("lastRenderedPageBreak".equals(childNode.getLocalName())) {
+//                                    return sectionIndex + 1;
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        return 0;
+//    }
 }
